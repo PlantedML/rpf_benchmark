@@ -1,7 +1,9 @@
-
 library(OpenML)
 library(mlr3)
 library(mlr3oml)
+
+# Cache datasets
+options("mlr3oml.cache" = TRUE) # requires install.packages('qs') 
 
 # Get CC18 tasks
 task_ids <- getOMLStudy('OpenML-CC18')$tasks$task.id

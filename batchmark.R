@@ -70,8 +70,15 @@ design <- benchmark_grid(tasks = tasks,
 
 # Run with batchtools
 reg_name <- "rpf_batchmark"
-unlink("./registry", recursive = TRUE)
-makeExperimentRegistry()
+reg_dir <- here::here("registry", reg_name)
+dir.create(here::here("registry"))
+
+if (dir.exists(reg_dir)) {
+  reg = loadRegistry(reg_dir, writeable = TRUE)
+} else {
+  reg = makeExperimentRegistry(reg_dir, seed = 230749)
+}
+
 batchmark(design)
 
 # Submit
