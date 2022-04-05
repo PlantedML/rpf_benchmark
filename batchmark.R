@@ -1,3 +1,6 @@
+# Ensure current GitHub dependencies
+remotes::install_github("PlantedML/randomPlantedForest")
+remotes::install_github("PlantedML/mlr3extralearners@rpf")
 
 library(batchtools)
 library(ggplot2)
@@ -16,54 +19,45 @@ mymsr <- msr("classif.auc")
 mytrm <- trm("evals", n_evals = 50) # 200
 mytnr <- tnr("random_search")
 
+auto_tune <- function(learner, ...) {
+  AutoTuner$new(
+    learner = learner,
+    resampling = resample_inner,
+    measure = mymsr,
+    search_space = ps(...),
+    terminator = mytrm,
+    tuner = mytnr
+  )
+}
+
 # ranger
-search_space_ranger = ps(
+tuned_ranger <- auto_tune(
+  learner = lrn("classif.ranger", predict_type = "prob", num.trees = 50),
   #splitrule = p_fct(c("gini", "hellinger")),
   mtry.ratio = p_dbl(0.1, 1),
   min.node.size = p_int(1, 50),
   replace = p_lgl(),
   sample.fraction = p_dbl(0.1, 1)
 )
-tuned_ranger <- AutoTuner$new(
-  learner = lrn("classif.ranger", predict_type = "prob", num.trees = 50),
-  resampling = resample_inner,
-  measure = mymsr,
-  search_space = search_space_ranger,
-  terminator = mytrm,
-  tuner = mytnr
-)
 
 # xgboost
-search_space_xgboost = ps(
+tuned_xgboost <- auto_tune(
+  learner = lrn("classif.xgboost", predict_type = "prob"),
   max_depth = p_int(1, 20),
   subsample = p_dbl(0.1, 1),
   colsample_bytree = p_dbl(0.1, 1),
   nrounds = p_int(10, 5000),
   eta = p_dbl(0, 1)
 )
-tuned_xgboost <- AutoTuner$new(
-  learner = lrn("classif.xgboost", predict_type = "prob"),
-  resampling = resample_inner,
-  measure = mymsr,
-  search_space = search_space_xgboost,
-  terminator = mytrm,
-  tuner = mytnr
-)
+
 
 # rpf
-search_space_rpf = ps(
+tuned_rpf <- auto_tune(
+  learner = lrn("classif.rpf", predict_type = "prob", ntrees = 50),
   splits = p_int(1, 50),
   split_try = p_int(1, 20),
   t_try = p_dbl(0.1, 1),
   max_interaction = p_int(1, 30)
-)
-tuned_rpf <- AutoTuner$new(
-  learner = lrn("classif.rpf", predict_type = "prob", ntrees = 50),
-  resampling = resample_inner,
-  measure = mymsr,
-  search_space = search_space_rpf,
-  terminator = mytrm,
-  tuner = mytnr
 )
 
 # Benchmark design
