@@ -1,6 +1,7 @@
 # Ensure current GitHub dependencies
 remotes::install_github("PlantedML/randomPlantedForest")
 remotes::install_github("PlantedML/mlr3extralearners@rpf")
+remotes::install_github("mlr-org/mlr3batchmark")
 
 library(batchtools)
 library(ggplot2)
@@ -71,16 +72,15 @@ design <- benchmark_grid(tasks = tasks,
 # Run with batchtools
 reg_name <- "rpf_batchmark"
 reg_dir <- here::here("registry", reg_name)
-dir.create(here::here("registry"))
 
 if (dir.exists(reg_dir)) {
   unlink(reg_dir)
-  #reg = loadRegistry(reg_dir, writeable = TRUE)
 } else {
+  dir.create(here::here("registry"))
   reg = makeExperimentRegistry(reg_dir, seed = 230749)
 }
 
-batchmark(design)
+batchmark(design, reg = reg)
 
 # Submit
 if (grepl("node\\d{2}|bipscluster", system("hostname", intern = TRUE))) {
