@@ -1,13 +1,13 @@
 # Ensure current GitHub dependencies
 remotes::install_github("PlantedML/randomPlantedForest")
+# mlr3xtralearners fork with branch for rpf learner
 remotes::install_github("PlantedML/mlr3extralearners@rpf")
+# Not on CRAN
 remotes::install_github("mlr-org/mlr3batchmark")
 
 library(batchtools)
-library(ggplot2)
 library(mlr3)
 library(mlr3batchmark)
-library(mlr3viz)
 library(mlr3tuning)
 library(mlr3learners)
 library(mlr3extralearners)
@@ -55,6 +55,7 @@ tuned_xgboost <- auto_tune(
 # rpf
 tuned_rpf <- auto_tune(
   learner = lrn("classif.rpf", predict_type = "prob", ntrees = 50),
+  loss = p_fct(c("L1", "L2", "logit", "exponential")),
   splits = p_int(1, 50),
   split_try = p_int(1, 20),
   t_try = p_dbl(0.1, 1),
@@ -74,7 +75,8 @@ reg_name <- "rpf_batchmark"
 reg_dir <- here::here("registry", reg_name)
 
 if (dir.exists(reg_dir)) {
-  unlink(reg_dir)
+  loadRegistry(reg_dir, writeable = TRUE)
+  # unlink(reg_dir)
 } else {
   dir.create(here::here("registry"))
   reg = makeExperimentRegistry(reg_dir, seed = 230749)
@@ -105,41 +107,21 @@ if (grepl("node\\d{2}|bipscluster", system("hostname", intern = TRUE))) {
   submitJobs()
 }
 
+
+# to submit only certain algorithms/tasks:
+if (FALSE) {
+  # only rpf jobs, or only xgboost jobs
+  ids_rpf <- findExperiments(algo.pars = learner_id == "classif.rpf.tuned")
+  ids_xgb <- findExperiments(algo.pars = learner_id == "classif.xgboost.tuned")
+  # only a specific task
+  ids_wilt <- findExperiments(prob.pars = task_id == "Task 146820: wilt (Supervised Classification)")
+
+  # only rpf on wilt
+  ids_rpf_wilt <- ijoin(ids_wilt, ids_rpf)
+  submitJobs(ids = ids_rpf_wilt)
+  
+  # See unwrap(getJobPars()) for all task_ids and learner_ids
+}
+
 waitForJobs()
 getStatus()
-
-bmr <- reduceResultsBatchmark()
-saveRDS(bmr, "bmr.Rds")
-
-if (FALSE) {
-  # Aggregate
-  aggr <- bmr$aggregate(measures = mymsr)
-  
-  # Only tasks for which we have results of all three learners
-  completed_tasks <- aggr[, names(which(table(task_id) == 3))]
-  aggr <- aggr[task_id %in% completed_tasks, ]
-  
-  # Plot over individual datasets
-  bmr$filter(task_ids = completed_tasks)
-  scores <- bmr$score(measures = mymsr)
-  scores[, learner_name := gsub("\\.tuned", "", gsub("classif\\.", "", learner_id))]
-  scores[, task_name := gsub(" \\(Supervised Classification\\)", "", gsub("Task \\d+: ", "", task_id))]
-  ggplot(scores, aes(x = learner_name, y = classif.auc)) +
-    facet_wrap(~ task_name) +
-    geom_boxplot() +
-    geom_point() +
-    theme_bw()
-  ggsave("bmr.pdf")
-  
-  autoplot(bmr, measure = mymsr) +
-    theme_bw()
-  ggsave("bmr.pdf")
-  
-  # Plot over all datasets
-  aggr[, learner_name := gsub("\\.tuned", "", gsub("classif\\.", "", learner_id))]
-  ggplot(aggr, aes(x = learner_name, y = classif.auc)) +
-    geom_boxplot() +
-    geom_point() +
-    theme_bw()
-  ggsave("aggr.pdf")
-}
