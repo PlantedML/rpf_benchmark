@@ -3,7 +3,7 @@ library(mlr3)
 library(mlr3oml)
 
 if (!("qs" %in% installed.packages())) {
-  install.packages("gs")
+  install.packages("qs")
 }
 
 # Cache datasets
