@@ -115,10 +115,11 @@ if (FALSE) {
   ids_xgb <- findExperiments(algo.pars = learner_id == "classif.xgboost.tuned")
   # only a specific task
   ids_wilt <- findExperiments(prob.pars = task_id == "Task 146820: wilt (Supervised Classification)")
-
-  # only rpf on wilt
-  ids_rpf_wilt <- ijoin(ids_wilt, ids_rpf)
-  submitJobs(ids = ids_rpf_wilt)
+  ids_diabetes <- findExperiments(prob.pars = task_id == "Task 37: diabetes (Supervised Classification)")
+  
+  # only rpf on diabetes
+  ids_rpf_diabetes <- ijoin(ids_diabetes, ids_rpf)
+  submitJobs(ids = ids_diabetes)
   
   # See unwrap(getJobPars()) for all task_ids and learner_ids
 }
