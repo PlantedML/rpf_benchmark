@@ -64,21 +64,30 @@ tuned_xgboost <- auto_tune(
 
 # rpf
 tuned_rpf <- auto_tune(
-  learner = lrn("classif.rpf", predict_type = "prob", ntrees = 50, max_interaction_limit = 30),
+  learner = lrn("classif.rpf", predict_type = "prob",
+                # Fixed to 50 for performance
+                ntrees = 50,
+                # Ensure upper bound as per Joseph
+                max_interaction_limit = 30),
   loss = p_fct(c("L1", "L2", "logit", "exponential")),
-  splits = p_int(1, 50),
+  splits = p_int(10, 50), # Bumped to lower = 10 as per Munir
   split_try = p_int(1, 20),
   t_try = p_dbl(0.1, 1),
   max_interaction_ratio = p_dbl(0, 1)
 )
 
 # Benchmark design
-learners <- list(tuned_ranger,
-                 tuned_xgboost,
-                 tuned_rpf)
-design <- benchmark_grid(tasks = tasks,
-                         learners = learners,
-                         resamplings = list(resample_outer))
+learners <- list(
+  tuned_ranger,
+  tuned_xgboost,
+  tuned_rpf
+)
+
+design <- benchmark_grid(
+  tasks = tasks, # Loaded in get_oml_tasks.R
+  learners = learners,
+  resamplings = list(resample_outer)
+)
 
 # Run with batchtools
 reg_name <- "rpf_batchmark"
@@ -117,7 +126,6 @@ if (grepl("node\\d{2}|bipscluster", system("hostname", intern = TRUE))) {
   submitJobs()
 }
 
-
 # to submit only certain algorithms/tasks:
 if (FALSE) {
   # only rpf jobs, or only xgboost jobs
@@ -126,12 +134,12 @@ if (FALSE) {
   # only a specific task
   ids_wilt <- findExperiments(prob.pars = task_id == "Task 146820: wilt (Supervised Classification)")
   ids_diabetes <- findExperiments(prob.pars = task_id == "Task 37: diabetes (Supervised Classification)")
-  
+
   # only rpf on one task
   ids_rpf_wilt <- ijoin(ids_wilt, ids_rpf)
   # ids_rpf_diabetes <- ijoin(ids_diabetes, ids_rpf)
   submitJobs(ids = ids_rpf_wilt)
-  
+
   # See unwrap(getJobPars()) for all task_ids and learner_ids
 }
 
