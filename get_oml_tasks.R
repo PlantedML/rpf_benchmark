@@ -3,7 +3,7 @@ library(mlr3)
 library(mlr3oml)
 
 # Cache datasets
-options("mlr3oml.cache" = TRUE) # requires install.packages('qs') 
+options("mlr3oml.cache" = TRUE) # requires install.packages('qs')
 
 # Get CC18 tasks
 task_ids <- getOMLStudy('OpenML-CC18')$tasks$task.id
@@ -25,3 +25,10 @@ task_ids_selected <- task_ids[task_info[1, ] & task_info[2, ] & task_info[3, ]]
 #tasks <- lapply(task_ids_selected[c(1, 3, 5)], tsk, .key = "oml")
 tasks <- lapply(task_ids_selected, tsk, .key = "oml")
 
+task_summary <- do.call(rbind, lapply(tasks, function(tsk) {
+  data.frame(
+    task_name = tsk$id,
+    n = tsk$nrow,
+    p = length(tsk$feature_names)
+  )
+}))

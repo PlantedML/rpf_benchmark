@@ -3,6 +3,11 @@ library(ggplot2)
 library(mlr3)
 library(mlr3batchmark)
 library(mlr3viz)
+library(mlr3tuning)
+library(mlr3learners)
+library(mlr3extralearners)
+
+mymsr <- msr("classif.auc")
 
 reg_name <- "rpf_batchmark"
 reg_dir <- here::here("registry", reg_name)
