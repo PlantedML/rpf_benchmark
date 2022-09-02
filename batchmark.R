@@ -1,9 +1,11 @@
 # Ensure current GitHub dependencies
-remotes::install_github("PlantedML/randomPlantedForest")
-# mlr3xtralearners fork with branch for rpf learner
-remotes::install_github("PlantedML/mlr3extralearners@rpf")
-# Not on CRAN
-remotes::install_github("mlr-org/mlr3batchmark")
+# run renv::restore() to install dependencies as stored in renv.lock
+# renv::update() to update dependencies after e.g. push to randomPlantedForest
+# renv::snapshot() to record updated versions in renv.lock.
+
+# Please not GitHub / fork dependencies
+# renv::install("mlr-org/mlr3batchmark")
+# renv::install("PlantedML/mlr3extralearners@rpf")
 
 library(batchtools)
 library(mlr3)
@@ -12,6 +14,14 @@ library(mlr3tuning)
 library(mlr3learners)
 library(mlr3extralearners)
 source("get_oml_tasks.R")
+
+# Have renv detect learner dependencies
+if (FALSE) {
+  library(randomPlantedForest) # renv::install("PlantedML/randomPlantedForest")
+  library(ranger)
+  library(xgboost)
+  library(qs) # for oml task caching
+}
 
 # Settings
 resample_outer <- rsmp("cv", folds = 5)
@@ -54,12 +64,12 @@ tuned_xgboost <- auto_tune(
 
 # rpf
 tuned_rpf <- auto_tune(
-  learner = lrn("classif.rpf", predict_type = "prob", ntrees = 50),
+  learner = lrn("classif.rpf", predict_type = "prob", ntrees = 50, max_interaction_limit = 30),
   loss = p_fct(c("L1", "L2", "logit", "exponential")),
   splits = p_int(1, 50),
   split_try = p_int(1, 20),
   t_try = p_dbl(0.1, 1),
-  max_interaction = p_int(1, 30)
+  max_interaction_ratio = p_dbl(0, 1)
 )
 
 # Benchmark design
@@ -73,12 +83,12 @@ design <- benchmark_grid(tasks = tasks,
 # Run with batchtools
 reg_name <- "rpf_batchmark"
 reg_dir <- here::here("registry", reg_name)
+if (!dir.exists("registry")) dir.create("registry")
 
 if (dir.exists(reg_dir)) {
-  loadRegistry(reg_dir, writeable = TRUE)
-  # unlink(reg_dir)
+  # loadRegistry(reg_dir, writeable = TRUE)
+  unlink(reg_dir, recursive = TRUE)
 } else {
-  dir.create(here::here("registry"))
   reg = makeExperimentRegistry(reg_dir, seed = 230749)
 }
 
@@ -117,9 +127,10 @@ if (FALSE) {
   ids_wilt <- findExperiments(prob.pars = task_id == "Task 146820: wilt (Supervised Classification)")
   ids_diabetes <- findExperiments(prob.pars = task_id == "Task 37: diabetes (Supervised Classification)")
   
-  # only rpf on diabetes
-  ids_rpf_diabetes <- ijoin(ids_diabetes, ids_rpf)
-  submitJobs(ids = ids_diabetes)
+  # only rpf on one task
+  ids_rpf_wilt <- ijoin(ids_wilt, ids_rpf)
+  # ids_rpf_diabetes <- ijoin(ids_diabetes, ids_rpf)
+  submitJobs(ids = ids_rpf_wilt)
   
   # See unwrap(getJobPars()) for all task_ids and learner_ids
 }

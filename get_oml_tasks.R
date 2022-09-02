@@ -2,10 +2,6 @@ library(OpenML)
 library(mlr3)
 library(mlr3oml)
 
-if (!("qs" %in% installed.packages())) {
-  install.packages("qs")
-}
-
 # Cache datasets
 options("mlr3oml.cache" = TRUE) # requires install.packages('qs') 
 
