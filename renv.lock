@@ -409,6 +409,19 @@
       "Hash": "36b4265fb818f6a342bed217549cd896",
       "Requirements": []
     },
+    "hardhat": {
+      "Package": "hardhat",
+      "Version": "1.2.0",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Hash": "7cd2660e174e555b05aaeac979dee22b",
+      "Requirements": [
+        "glue",
+        "rlang",
+        "tibble",
+        "vctrs"
+      ]
+    },
     "here": {
       "Package": "here",
       "Version": "1.0.1",
@@ -832,6 +845,24 @@
         "RApiSerialize",
         "Rcpp",
         "stringfish"
+      ]
+    },
+    "randomPlantedForest": {
+      "Package": "randomPlantedForest",
+      "Version": "0.0.0.9000",
+      "Source": "GitHub",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteUsername": "PlantedML",
+      "RemoteRepo": "randomPlantedForest",
+      "RemoteRef": "master",
+      "RemoteSha": "3d3b10b222a2962f2d64dd7e0dc394a8974fb4c9",
+      "Hash": "b1a6573463796fa62709f808c18bc7a4",
+      "Requirements": [
+        "Rcpp",
+        "checkmate",
+        "data.table",
+        "hardhat"
       ]
     },
     "ranger": {
