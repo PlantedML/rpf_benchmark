@@ -61,26 +61,41 @@ tuned_xgboost <- auto_tune(
   eta = p_dbl(0, 1)
 )
 
-
 # rpf
 tuned_rpf <- auto_tune(
   learner = lrn("classif.rpf", predict_type = "prob",
+                id = "classif.rpf",
                 # Fixed to 50 for performance
                 ntrees = 50,
                 # Ensure upper bound as per Joseph
                 max_interaction_limit = 30),
-  loss = p_fct(c("L1", "L2", "logit", "exponential")),
+  loss = p_fct(c("L1", "logit", "exponential")),
   splits = p_int(10, 50), # Bumped to lower = 10 as per Munir
   split_try = p_int(1, 20),
   t_try = p_dbl(0.1, 1),
   max_interaction_ratio = p_dbl(0, 1)
 )
 
+# Fixed max_interaction as suggested by Munir
+# Same params as other rpf otherwise
+# Need to set ID for disambiguation with other rpf learner!
+tuned_rpf_fixmax <- auto_tune(
+  learner = lrn("classif.rpf", predict_type = "prob",
+                id = "classif.rpf_fixmax",
+                ntrees = 50,
+                max_interaction = 2),
+  loss = p_fct(c("L1", "logit", "exponential")),
+  splits = p_int(10, 50),
+  split_try = p_int(1, 20),
+  t_try = p_dbl(0.1, 1)
+)
+
 # Benchmark design
 learners <- list(
   tuned_ranger,
   tuned_xgboost,
-  tuned_rpf
+  tuned_rpf,
+  tuned_rpf_fixmax
 )
 
 design <- benchmark_grid(
@@ -95,13 +110,17 @@ reg_dir <- here::here("registry", reg_name)
 if (!dir.exists("registry")) dir.create("registry")
 
 if (dir.exists(reg_dir)) {
-  # loadRegistry(reg_dir, writeable = TRUE)
+  # Comment this line to prevent stored registry deletion on accident
   unlink(reg_dir, recursive = TRUE)
-} else {
-  reg = makeExperimentRegistry(reg_dir, seed = 230749)
 }
 
+reg <- makeExperimentRegistry(reg_dir, seed = 230749)
+
+
 batchmark(design, reg = reg)
+
+# Overview of learner IDs
+table(unwrap(getJobPars())[["learner_id"]])
 
 # Submit
 if (grepl("node\\d{2}|bipscluster", system("hostname", intern = TRUE))) {
