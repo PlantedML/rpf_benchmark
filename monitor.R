@@ -1,3 +1,4 @@
+#! /usr/bin/env Rscript
 # monitor current status
 library(batchtools)
 reg_name <- "rpf_batchmark"
@@ -22,6 +23,15 @@ cli::cli_h1("Done")
 tbl_done <- unwrap(getJobTable(findDone()))
 tbl_done <- tbl_done[, c("job.id", "time.running", "task_id", "learner_id")]
 tbl_done[, .(count = .N), by = learner_id]
+
+cat("\n")
+
+# Expired -----------
+cli::cli_h1("Expired")
+
+tbl_expired <- unwrap(getJobTable(findExpired()))
+tbl_expired <- tbl_expired[, c("job.id", "time.running", "task_id", "learner_id")]
+tbl_expired[, .(count = .N), by = learner_id]
 
 cat("\n")
 
