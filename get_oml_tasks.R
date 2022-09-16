@@ -12,10 +12,15 @@ task_ids <- getOMLStudy('OpenML-CC18')$tasks$task.id
 task_info <- sapply(task_ids, function(task_id) {
   task <- tsk("oml", task_id)
   c(twoclass = ("twoclass" %in% task$properties),
-    numerics = all(task$feature_types$type %in% c("integer", "numeric")),
+    featuretypes = all(task$feature_types$type %in% c("integer", "numeric", "factor")), # disallow logical
     nomissing = (max(task$missings()) == 0))
 })
+
 task_ids_selected <- task_ids[task_info[1, ] & task_info[2, ] & task_info[3, ]]
+
+# All feature types in set
+# sapply(task_ids, \(x) unique(tsk("oml", x)$feature_types$type)) |> unlist() |> unique()
+
 
 #dput(task_ids_selected)
 # task_ids_selected <- c(37L, 43L, 3902L, 3903L, 3913L, 3917L, 3918L, 9910L, 9946L,
@@ -32,3 +37,5 @@ task_summary <- do.call(rbind, lapply(tasks, function(tsk) {
     p = length(tsk$feature_names)
   )
 }))
+
+saveRDS("task_summary.rds")
