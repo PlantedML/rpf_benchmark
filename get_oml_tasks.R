@@ -32,10 +32,12 @@ tasks <- lapply(task_ids_selected, tsk, .key = "oml")
 
 task_summary <- do.call(rbind, lapply(tasks, function(tsk) {
   data.frame(
-    task_name = tsk$id,
+    task_name = sub(pattern = "\\s\\(Supervised\\ Classification\\)", "", tsk$id),
     n = tsk$nrow,
     p = length(tsk$feature_names)
   )
 }))
+task_summary$task_id <- task_ids_selected
+task_summary <- task_summary[order(task_summary$n * task_summary$p, decreasing = TRUE), ]
 
 saveRDS("task_summary.rds")
