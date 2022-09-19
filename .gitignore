@@ -3,3 +3,6 @@
 .RData
 .Ruserdata
 registry/
+
+*png
+*pdf
