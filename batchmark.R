@@ -3,7 +3,7 @@
 # renv::update() to update dependencies after e.g. push to randomPlantedForest
 # renv::snapshot() to record updated versions in renv.lock.
 
-# Please not GitHub / fork dependencies
+# Please note GitHub / fork dependencies
 # renv::install("mlr-org/mlr3batchmark")
 # renv::install("PlantedML/mlr3extralearners@rpf")
 
@@ -27,7 +27,8 @@ if (FALSE) {
 resample_outer <- rsmp("cv", folds = 5)
 resample_inner <- rsmp("cv", folds = 3)
 mymsr <- msr("classif.auc")
-mytrm <- trm("evals", n_evals = 50) # 200
+# mytrm <- trm("evals", n_evals = 50) # Trial mode
+mytrm <- trm("evals", n_evals = 200)  # Serious mode
 mytnr <- tnr("random_search")
 
 auto_tune <- function(learner, ...) {

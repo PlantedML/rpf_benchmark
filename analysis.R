@@ -3,9 +3,6 @@ library(ggplot2)
 library(mlr3)
 library(mlr3batchmark)
 library(mlr3viz)
-library(mlr3tuning)
-library(mlr3learners)
-library(mlr3extralearners)
 
 mymsr <- msr("classif.auc")
 
