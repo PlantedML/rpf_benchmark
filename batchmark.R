@@ -28,8 +28,8 @@ if (FALSE) {
 resample_outer <- rsmp("cv", folds = 5)
 resample_inner <- rsmp("cv", folds = 3)
 mymsr <- msr("classif.auc")
-mytrm <- trm("evals", n_evals = 50) # Trial mode
-# mytrm <- trm("evals", n_evals = 200)  # Serious mode
+# mytrm <- trm("evals", n_evals = 50) # Trial mode
+mytrm <- trm("evals", n_evals = 200)  # Serious mode
 mytnr <- tnr("random_search")
 
 auto_tune <- function(learner, .encode = FALSE, ...) {
