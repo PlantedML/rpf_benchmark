@@ -62,7 +62,9 @@ tuned_ranger <- auto_tune(
 
 # xgboost
 tuned_xgboost <- auto_tune(
-  learner = lrn("classif.xgboost", predict_type = "prob"),
+  learner = lrn("classif.xgboost", predict_type = "prob",
+                nthread = 1, # Just to be safe
+                ),
   .encode = TRUE,
   # Need to prefix params with learner id bc of pipeline
   classif.xgboost.max_depth = p_int(1, 20),
@@ -75,6 +77,7 @@ tuned_xgboost <- auto_tune(
 # xgboost: fixed depth as analogue to rpf_fixmax, suggested by Munir
 tuned_xgboost_fixdepth <- auto_tune(
   learner = lrn("classif.xgboost", predict_type = "prob",
+                nthread = 1, # Just to be safe
                 max_depth = 2, id = "classif.xgboost_fixdepth"),
   .encode = TRUE,
   # Need to prefix params with learner id bc of pipeline
