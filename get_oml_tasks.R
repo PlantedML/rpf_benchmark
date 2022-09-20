@@ -28,6 +28,7 @@ task_info <- do.call(rbind, lapply(task_ids, function(task_id) {
     twoclass = ("twoclass" %in% task$properties),
     featuretypes = all(task$feature_types$type %in% c("integer", "numeric", "factor")), # disallow logical
     nomissing = (max(task$missings()) == 0),
+    has_factors = "factor" %in% task$feature_types$type,
     n = task_n,
     p = task_p,
     dim = task_n * task_p
