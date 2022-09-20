@@ -63,7 +63,7 @@ tuned_ranger <- auto_tune(
 # xgboost
 tuned_xgboost <- auto_tune(
   learner = lrn("classif.xgboost", predict_type = "prob",
-                nthread = 1, # Just to be safe
+                nthread = 1 # Just to be safe
                 ),
   .encode = TRUE,
   # Need to prefix params with learner id bc of pipeline
