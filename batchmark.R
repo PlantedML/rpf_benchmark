@@ -25,8 +25,8 @@ if (FALSE) {
 }
 
 # Settings
-resample_outer <- rsmp("cv", folds = 5)
-resample_inner <- rsmp("cv", folds = 3)
+resample_outer <- rsmp("cv", folds = 10)
+resample_inner <- rsmp("cv", folds = 5)
 mymsr <- msr("classif.auc")
 # mytrm <- trm("evals", n_evals = 50) # Trial mode
 mytrm <- trm("evals", n_evals = 200)  # Serious mode
@@ -156,7 +156,7 @@ if (grepl("node\\d{2}|bipscluster", system("hostname", intern = TRUE))) {
   submitJobs(ids = ids, # walltime in seconds, 10 days max, memory in MB
              resources = list(name = reg_name, chunks.as.arrayjobs = TRUE,
                               ncpus = 1, memory = 6000, walltime = 10*24*3600,
-                              max.concurrent.jobs = 200))
+                              max.concurrent.jobs = 400))
 } else if (grepl("glogin\\d+", system("hostname", intern = TRUE))) {
   ids <- findErrors()
   ids[, chunk := chunk(job.id, chunk.size = 10)]
