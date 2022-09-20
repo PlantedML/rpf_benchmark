@@ -13,6 +13,7 @@ library(mlr3batchmark)
 library(mlr3tuning)
 library(mlr3learners)
 library(mlr3extralearners)
+library(mlr3pipelines)
 source("get_oml_tasks.R")
 
 # Have renv detect learner dependencies
@@ -27,16 +28,23 @@ if (FALSE) {
 resample_outer <- rsmp("cv", folds = 5)
 resample_inner <- rsmp("cv", folds = 3)
 mymsr <- msr("classif.auc")
-# mytrm <- trm("evals", n_evals = 50) # Trial mode
-mytrm <- trm("evals", n_evals = 200)  # Serious mode
+mytrm <- trm("evals", n_evals = 50) # Trial mode
+# mytrm <- trm("evals", n_evals = 200)  # Serious mode
 mytnr <- tnr("random_search")
 
-auto_tune <- function(learner, ...) {
+auto_tune <- function(learner, .encode = FALSE, ...) {
+  search_space <- ps(...)
+
+  if (.encode) {
+    learner_graph <- po("encode", method = "treatment") %>>%
+      po("learner", learner)
+    learner <- as_learner(learner_graph)
+  }
   AutoTuner$new(
     learner = learner,
     resampling = resample_inner,
     measure = mymsr,
-    search_space = ps(...),
+    search_space = search_space,
     terminator = mytrm,
     tuner = mytnr
   )
@@ -55,11 +63,25 @@ tuned_ranger <- auto_tune(
 # xgboost
 tuned_xgboost <- auto_tune(
   learner = lrn("classif.xgboost", predict_type = "prob"),
-  max_depth = p_int(1, 20),
-  subsample = p_dbl(0.1, 1),
-  colsample_bytree = p_dbl(0.1, 1),
-  nrounds = p_int(10, 5000),
-  eta = p_dbl(0, 1)
+  .encode = TRUE,
+  # Need to prefix params with learner id bc of pipeline
+  classif.xgboost.max_depth = p_int(1, 20),
+  classif.xgboost.subsample = p_dbl(0.1, 1),
+  classif.xgboost.colsample_bytree = p_dbl(0.1, 1),
+  classif.xgboost.nrounds = p_int(10, 5000),
+  classif.xgboost.eta = p_dbl(0, 1)
+)
+
+# xgboost: fixed depth as analogue to rpf_fixmax, suggested by Munir
+tuned_xgboost_fixdepth <- auto_tune(
+  learner = lrn("classif.xgboost", predict_type = "prob",
+                max_depth = 2, id = "classif.xgboost_fixdepth"),
+  .encode = TRUE,
+  # Need to prefix params with learner id bc of pipeline
+  classif.xgboost_fixdepth.subsample = p_dbl(0.1, 1),
+  classif.xgboost_fixdepth.colsample_bytree = p_dbl(0.1, 1),
+  classif.xgboost_fixdepth.nrounds = p_int(10, 5000),
+  classif.xgboost_fixdepth.eta = p_dbl(0, 1)
 )
 
 # rpf
@@ -95,6 +117,7 @@ tuned_rpf_fixmax <- auto_tune(
 learners <- list(
   tuned_ranger,
   tuned_xgboost,
+  tuned_xgboost_fixdepth,
   tuned_rpf,
   tuned_rpf_fixmax
 )
@@ -150,7 +173,11 @@ if (grepl("node\\d{2}|bipscluster", system("hostname", intern = TRUE))) {
 if (FALSE) {
   # only rpf jobs, or only xgboost jobs
   ids_rpf <- findExperiments(algo.pars = learner_id == "classif.rpf.tuned")
-  ids_xgb <- findExperiments(algo.pars = learner_id == "classif.xgboost.tuned")
+  ids_rpf_fixmax <- findExperiments(algo.pars = learner_id == "classif.rpf_fixmax.tuned")
+  ids_xgb <- findExperiments(algo.pars = learner_id == "encode.classif.xgboost.tuned")
+  ids_xgb_fixdepth <- findExperiments(algo.pars = learner_id == "encode.classif.xgboost_fixdepth.tuned")
+  ids_ranger <- findExperiments(algo.pars = learner_id == "classif.ranger.tuned")
+
   # only a specific task
   ids_wilt <- findExperiments(prob.pars = task_id == "Task 146820: wilt (Supervised Classification)")
   ids_diabetes <- findExperiments(prob.pars = task_id == "Task 37: diabetes (Supervised Classification)")
