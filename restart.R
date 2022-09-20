@@ -43,11 +43,12 @@ if (grepl("node\\d{2}|bipscluster", system("hostname", intern = TRUE))) {
                               # medium40 - 48h walltime
                               ncpus = 1, walltime = 3600*48))
 } else {
-  # ids_rpf <- findExperiments(algo.pars = learner_id == "classif.rpf.tuned")
-  # ids_rpf_fixmax <- findExperiments(algo.pars = learner_id == "classif.rpf_fixmax.tuned")
-  # ids_rpf_all <- rbind(ids_rpf, ids_rpf_fixmax)
-  # ids_rpf_all <- ijoin(findExpired(), ids_rpf_all)
-  # ids_rpf_all <- ijoin(findNotStarted(), ids_rpf_all)
+  ids_rpf <- findExperiments(algo.pars = learner_id == "classif.rpf.tuned")
+  ids_rpf_fixmax <- findExperiments(algo.pars = learner_id == "classif.rpf_fixmax.tuned")
+  ids_xgb <- findExperiments(algo.pars = learner_id == "encode.classif.xgboost.tuned")
+  ids_xgb_fixdepth <- findExperiments(algo.pars = learner_id == "encode.classif.xgboost_fixdepth.tuned")
+  ids_ranger <- findExperiments(algo.pars = learner_id == "classif.ranger.tuned")
+
 
   # submitJobs(ids_rpf_all)
   submitJobs(findExpired())
