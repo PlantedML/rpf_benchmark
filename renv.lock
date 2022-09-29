@@ -15,10 +15,10 @@
   "Packages": {
     "BBmisc": {
       "Package": "BBmisc",
-      "Version": "1.12",
+      "Version": "1.13",
       "Source": "Repository",
-      "Repository": "RSPM",
-      "Hash": "06759fa192620b04d2ffa8a40a6c3043",
+      "Repository": "CRAN",
+      "Hash": "005fd5ee75240b66b9df92c7cb32a913",
       "Requirements": [
         "checkmate",
         "data.table"
@@ -195,10 +195,10 @@
     },
     "brew": {
       "Package": "brew",
-      "Version": "1.0-7",
+      "Version": "1.0-8",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "38875ea52350ff4b4c03849fc69736c8",
+      "Hash": "d69a786e85775b126bddbee185ae6084",
       "Requirements": []
     },
     "cachem": {
@@ -224,10 +224,10 @@
     },
     "cli": {
       "Package": "cli",
-      "Version": "3.4.0",
+      "Version": "3.4.1",
       "Source": "Repository",
       "Repository": "RSPM",
-      "Hash": "78003c09d258968a4d28107e779edb10",
+      "Hash": "0d297d01734d2bcea40197bd4971a764",
       "Requirements": []
     },
     "codetools": {
@@ -567,16 +567,10 @@
     },
     "mlr3": {
       "Package": "mlr3",
-      "Version": "0.14.0-9000",
-      "Source": "GitHub",
-      "RemoteType": "github",
-      "Remotes": "alan-turing-institute/distr6",
-      "RemoteHost": "api.github.com",
-      "RemoteRepo": "mlr3",
-      "RemoteUsername": "mlr-org",
-      "RemoteRef": "HEAD",
-      "RemoteSha": "435c9d13fae39ef3f3f6cf40cbfae6fc9d19a039",
-      "Hash": "0b6312f1585a922bfc8289a6eea9cd69",
+      "Version": "0.14.0",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Hash": "ebe4539c93c55c47ce607370512a9ad4",
       "Requirements": [
         "R6",
         "backports",
@@ -665,10 +659,10 @@
     },
     "mlr3misc": {
       "Package": "mlr3misc",
-      "Version": "0.10.0",
+      "Version": "0.11.0",
       "Source": "Repository",
       "Repository": "RSPM",
-      "Hash": "7ce6022ad93ce89eb71982a01f414779",
+      "Hash": "89b9a5ced0c6a02b91cd19dee0e79e9d",
       "Requirements": [
         "R6",
         "backports",
@@ -698,10 +692,10 @@
     },
     "mlr3pipelines": {
       "Package": "mlr3pipelines",
-      "Version": "0.4.1",
+      "Version": "0.4.2",
       "Source": "Repository",
       "Repository": "RSPM",
-      "Hash": "37034a8d1012d9e577c559c30401c5c6",
+      "Hash": "ec0b11b11d0a13a965f443aff1ef9278",
       "Requirements": [
         "R6",
         "backports",
@@ -904,18 +898,18 @@
     },
     "renv": {
       "Package": "renv",
-      "Version": "0.15.5",
+      "Version": "0.16.0",
       "Source": "Repository",
-      "Repository": "RSPM",
-      "Hash": "6a38294e7d12f5d8e656b08c5bd8ae34",
+      "Repository": "CRAN",
+      "Hash": "c9e8442ab69bc21c9697ecf856c1e6c7",
       "Requirements": []
     },
     "rlang": {
       "Package": "rlang",
-      "Version": "1.0.5",
+      "Version": "1.0.6",
       "Source": "Repository",
       "Repository": "RSPM",
-      "Hash": "971c3d698fc06dabdac6bc4bcda72dc4",
+      "Hash": "4ed1f8336c8d52c3e750adcdc57228a7",
       "Requirements": []
     },
     "rprojroot": {
@@ -1004,10 +998,10 @@
     },
     "vctrs": {
       "Package": "vctrs",
-      "Version": "0.4.1",
+      "Version": "0.4.2",
       "Source": "Repository",
-      "Repository": "RSPM",
-      "Hash": "8b54f22e2a58c4f275479c92ce041a57",
+      "Repository": "CRAN",
+      "Hash": "0e3dfc070b2a8f0478fcdf86fb33355d",
       "Requirements": [
         "cli",
         "glue",
