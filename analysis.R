@@ -22,10 +22,10 @@ aggr <- bmr$aggregate(measures = mymsr)
 aggr[, learner_name := gsub("\\.tuned", "", gsub("classif\\.", "", learner_id))]
 
 
-# Only tasks for which we have results of all four learners
-completed_tasks <- aggr[, names(which(table(task_id) == 4))]
-aggr <- aggr[task_id %in% completed_tasks, ]
-bmr$filter(task_ids = completed_tasks)
+# Optional: Only tasks for which we have results of all four learners
+# completed_tasks <- aggr[, names(which(table(task_id) == 4))]
+# aggr <- aggr[task_id %in% completed_tasks, ]
+# bmr$filter(task_ids = completed_tasks)
 
 # Plot over individual datasets
 scores <- bmr$score(measures = mymsr)
@@ -49,7 +49,6 @@ ggplot(scores, aes(x = learner_name, y = classif.auc, fill = learner_name)) +
 ggsave("bmr.png", width = 12, height = 7, bg = "white")
 ggsave("bmr.pdf", width = 12, height = 7)
 
-
 ggplot(scores, aes(y = learner_name, x = classif.auc, fill = learner_name)) +
   facet_wrap(~ task_name, scales = "free_x") +
   geom_boxplot(alpha = .5) +
@@ -64,6 +63,7 @@ ggplot(scores, aes(y = learner_name, x = classif.auc, fill = learner_name)) +
   theme(
     panel.spacing.x = unit(1, "cm")
   )
+
 ggsave("bmr-flip.png", width = 12, height = 7, bg = "white")
 ggsave("bmr-flip.pdf", width = 12, height = 7)
 
@@ -77,6 +77,12 @@ ggplot(aggr, aes(x = learner_name, y = classif.auc, fill = learner_name)) +
     x = "Learner", y = "AUC"
   ) +
   theme_minimal()
+
 ggsave("aggr.png", width = 12, height = 7, bg = "white")
 ggsave("aggr.pdf", width = 12, height = 7)
 
+# Tuning results -------------------------------------------------------------------------------------------------
+library(mlr3tuning)
+
+tuning_archive <- extract_inner_tuning_archives(bmr)
+tuning_results <- extract_inner_tuning_results(bmr)
