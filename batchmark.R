@@ -131,7 +131,9 @@ design <- benchmark_grid(
   resamplings = list(resample_outer)
 )
 
-# Run with batchtools
+
+# Registry setup ----------------------------------------------------------
+
 reg_name <- "rpf_batchmark"
 reg_dir <- here::here("registry", reg_name)
 if (!dir.exists("registry")) dir.create("registry")
@@ -143,33 +145,61 @@ if (dir.exists(reg_dir)) {
 
 reg <- makeExperimentRegistry(reg_dir, seed = 230749)
 
-
-batchmark(design, reg = reg)
+# Ensure store_models = TRUE to access to tuning archives
+batchmark(design, reg = reg, store_models = TRUE)
 
 # Overview of learner IDs
-table(unwrap(getJobPars())[["learner_id"]])
+as.data.frame(table(unwrap(getJobPars())[["learner_id"]]))
 
-# Submit
+
+# Job subselection --------------------------------------------------------
+
+ids_rpf <- findExperiments(algo.pars = learner_id == "classif.rpf.tuned")
+ids_rpf_fixmax <- findExperiments(algo.pars = learner_id == "classif.rpf_fixmax.tuned")
+ids_xgb <- findExperiments(algo.pars = learner_id == "encode.classif.xgboost.tuned")
+ids_xgb_fixdepth <- findExperiments(algo.pars = learner_id == "encode.classif.xgboost_fixdepth.tuned")
+ids_ranger <- findExperiments(algo.pars = learner_id == "classif.ranger.tuned")
+
+task_summary <- readRDS("task_summary.rds")
+
+# Tasks with n*p <= kc2, 7th smallest task
+small_tasks <- task_summary |> subset(dim <= 10962)
+
+# should have kept original task names in task_summary...
+small_task_ids <- sapply(seq_len(nrow(small_tasks)), function(x) {
+  sprintf("Task %d: %s (Supervised Classification)", small_tasks[x, "task_id"], small_tasks[x, "task_name"])
+})
+
+# Jobs for small tasks
+jobs_small_task_ids <- findExperiments(prob.pars = task_id %in% small_task_ids)
+
+# ijoin with rpf/rpf_fixmax jobs
+small_jobs_rpf <- ijoin(jobs_small_task_ids, rbind(ids_rpf, ids_rpf_fixmax))
+
+
+# Submit ------------------------------------------------------------------
+
 if (grepl("node\\d{2}|bipscluster", system("hostname", intern = TRUE))) {
-  ids <- findNotStarted()
+  #ids <- findNotStarted()
+  ids <- small_jobs_rpf
   ids[, chunk := chunk(job.id, chunk.size = 50)]
   submitJobs(ids = ids, # walltime in seconds, 10 days max, memory in MB
              resources = list(name = reg_name, chunks.as.arrayjobs = TRUE,
                               ncpus = 1, memory = 6000, walltime = 10*24*3600,
                               max.concurrent.jobs = 400))
-} else if (grepl("glogin\\d+", system("hostname", intern = TRUE))) {
-  ids <- findErrors()
-  ids[, chunk := chunk(job.id, chunk.size = 10)]
-  submitJobs(ids = ids, # walltime in seconds, 10 days max, memory in MB
-             resources = list(name = reg_name, chunks.as.arrayjobs = FALSE,
-                              partition = "large40", ntasks = 10, # ntaskspernode depends on partition
-                              max.concurrent.jobs = 8000,
-                              #partition = "large40:shared",
-                              # medium40:test - 1h walltime
-                              # medium40 - 48h walltime
-                              ncpus = 1, walltime = 3600*48))
+# } else if (grepl("glogin\\d+", system("hostname", intern = TRUE))) {
+#   ids <- findErrors()
+#   ids[, chunk := chunk(job.id, chunk.size = 10)]
+#   submitJobs(ids = ids, # walltime in seconds, 10 days max, memory in MB
+#              resources = list(name = reg_name, chunks.as.arrayjobs = FALSE,
+#                               partition = "large40", ntasks = 10, # ntaskspernode depends on partition
+#                               max.concurrent.jobs = 8000,
+#                               #partition = "large40:shared",
+#                               # medium40:test - 1h walltime
+#                               # medium40 - 48h walltime
+#                               ncpus = 1, walltime = 3600*48))
 } else {
-  submitJobs()
+  submitJobs(small_jobs_rpf)
 }
 
 # to submit only certain algorithms/tasks:
