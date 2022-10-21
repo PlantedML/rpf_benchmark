@@ -36,6 +36,7 @@ task_info <- do.call(rbind, lapply(task_ids, function(task_id) {
 }))
 
 # Select for required properties
+# FIXME: Remove restriction to `twoclass` to include multiclass tasks in benchmark
 task_info <- subset(task_info, twoclass & featuretypes & nomissing)
 
 # Rank & sort by dimensionality
@@ -43,6 +44,7 @@ task_info$dim_rank <- rank(task_info$dim)
 task_info <- task_info[order(task_info$dim_rank), ]
 
 # Rough heuristic: n * p smaller than 1.000.000, gets 23 tasks in this case.
+# Or better pc3, 100.000
 task_info <- subset(task_info, dim <= 1e6)
 task_ids_selected <- task_info[["task_id"]]
 
