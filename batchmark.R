@@ -95,7 +95,7 @@ tuned_rpf <- auto_tune(
                 ntrees = 50,
                 # Ensure upper bound as per Joseph
                 max_interaction_limit = 30),
-  loss = p_fct(c("L1", "logit", "exponential")),
+  loss = p_fct(c("L1", "exponential")), # removed logit for now
   splits = p_int(10, 50), # Bumped to lower = 10 as per Munir
   split_try = p_int(1, 20),
   t_try = p_dbl(0.1, 1),
@@ -199,7 +199,7 @@ if (grepl("node\\d{2}|bipscluster", system("hostname", intern = TRUE))) {
 #                               # medium40 - 48h walltime
 #                               ncpus = 1, walltime = 3600*48))
 } else {
-  submitJobs(small_jobs_rpf)
+  submitJobs(findNotSubmitted(small_jobs_rpf))
 }
 
 # to submit only certain algorithms/tasks:
