@@ -110,7 +110,7 @@ tuned_rpf_fixmax <- auto_tune(
                 id = "classif.rpf_fixmax",
                 ntrees = 50,
                 max_interaction = 2),
-  loss = p_fct(c("L1", "logit", "exponential")),
+  loss = p_fct(c("L1", "exponential")), # removed logit for now
   splits = p_int(10, 50),
   split_try = p_int(1, 20),
   t_try = p_dbl(0.1, 1)
