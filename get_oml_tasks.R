@@ -36,16 +36,15 @@ task_info <- do.call(rbind, lapply(task_ids, function(task_id) {
 }))
 
 # Select for required properties
-# FIXME: Remove restriction to `twoclass` to include multiclass tasks in benchmark
-task_info <- subset(task_info, twoclass & featuretypes & nomissing)
+# Include multiclass, restrict to non-logical features + no missing data
+task_info <- subset(task_info,  featuretypes & nomissing)
 
 # Rank & sort by dimensionality
 task_info$dim_rank <- rank(task_info$dim)
 task_info <- task_info[order(task_info$dim_rank), ]
 
-# Rough heuristic: n * p smaller than 1.000.000, gets 23 tasks in this case.
-# Or better pc3, 100.000
-task_info <- subset(task_info, dim <= 1e6)
+# Rough heuristic: n * p smaller than 7e5, since 723376 for "bank-marketing" is already v slow
+task_info <- subset(task_info, dim <= 7e5)
 task_ids_selected <- task_info[["task_id"]]
 
 # This object is what counts, as it is used in batchmark.R
