@@ -37,7 +37,7 @@ task_info <- do.call(rbind, lapply(task_ids, function(task_id) {
 
 # Select for required properties
 # Include multiclass, restrict to non-logical features + no missing data
-task_info <- subset(task_info,  featuretypes & nomissing)
+task_info <- subset(task_info, twoclass & featuretypes & nomissing)
 
 # Rank & sort by dimensionality
 task_info$dim_rank <- rank(task_info$dim)
