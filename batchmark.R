@@ -136,21 +136,26 @@ design <- benchmark_grid(
 
 reg_name <- "rpf_batchmark"
 reg_dir <- here::here("registry", reg_name)
+# Comment this line to prevent stored registry deletion on accident
+# unlink(reg_dir, recursive = TRUE)
+
+# "registry" holds the registries, must be ensured to exist
 if (!dir.exists("registry")) dir.create("registry")
 
-if (dir.exists(reg_dir)) {
-  # Comment this line to prevent stored registry deletion on accident
-  unlink(reg_dir, recursive = TRUE)
+if (dir.exists(reg_dir)) { # if current registry exists, we continue on
+
+  loadRegistry(reg_dir, writeable = TRUE)
+
+} else { # If registry doesn't exist yet: make registry and batchmark
+
+  reg <- makeExperimentRegistry(reg_dir, seed = 230749)
+
+  # Ensure store_models = TRUE to access to tuning archives
+  batchmark(design, reg = reg, store_models = TRUE)
 }
-
-reg <- makeExperimentRegistry(reg_dir, seed = 230749)
-
-# Ensure store_models = TRUE to access to tuning archives
-batchmark(design, reg = reg, store_models = TRUE)
 
 # Overview of learner IDs
 as.data.frame(table(unwrap(getJobPars())[["learner_id"]]))
-
 
 # Job subselection --------------------------------------------------------
 
@@ -163,7 +168,8 @@ ids_ranger <- findExperiments(algo.pars = learner_id == "classif.ranger.tuned")
 task_summary <- readRDS("task_summary.rds")
 
 # Tasks with n*p <= kc2, 7th smallest task
-small_tasks <- task_summary |> subset(dim <= 10962)
+# small_tasks <- task_summary |> subset(dim <= 10962)
+small_tasks <- task_summary |> subset(dim <= 1e5)
 
 # should have kept original task names in task_summary...
 small_task_ids <- sapply(seq_len(nrow(small_tasks)), function(x) {
@@ -199,8 +205,10 @@ if (grepl("node\\d{2}|bipscluster", system("hostname", intern = TRUE))) {
 #                               # medium40 - 48h walltime
 #                               ncpus = 1, walltime = 3600*48))
 } else {
-  submitJobs(findNotSubmitted(ids_rpf))
-  submitJobs(findNotSubmitted(ids_rpf_fixmax))
+  # small tasks first
+  submitJobs(findNotSubmitted(jobs_small_task_ids))
+  # then everything else that's not done already
+  submitJobs(findNotDone())
 }
 
 # to submit only certain algorithms/tasks:
