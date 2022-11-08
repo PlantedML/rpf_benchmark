@@ -199,7 +199,8 @@ if (grepl("node\\d{2}|bipscluster", system("hostname", intern = TRUE))) {
 #                               # medium40 - 48h walltime
 #                               ncpus = 1, walltime = 3600*48))
 } else {
-  submitJobs(findNotSubmitted())
+  submitJobs(findNotSubmitted(ids_rpf))
+  submitJobs(findNotSubmitted(ids_rpf_fixmax))
 }
 
 # to submit only certain algorithms/tasks:
