@@ -27,7 +27,7 @@ if (FALSE) {
 # Settings
 resample_outer <- rsmp("cv", folds = 10)
 resample_inner <- rsmp("cv", folds = 5)
-mymsr <- msr("classif.auc")
+mymsr <- msr("classif.mauc_aunp")
 # mytrm <- trm("evals", n_evals = 50) # Trial mode
 mytrm <- trm("evals", n_evals = 200)  # Serious mode
 mytnr <- tnr("random_search")
@@ -126,7 +126,7 @@ learners <- list(
 )
 
 design <- benchmark_grid(
-  tasks = tasks, # Loaded in get_oml_tasks.R
+  tasks = tasks_multiclass, # Loaded in get_oml_tasks.R
   learners = learners,
   resamplings = list(resample_outer)
 )
@@ -134,7 +134,7 @@ design <- benchmark_grid(
 
 # Registry setup ----------------------------------------------------------
 
-reg_name <- "rpf_batchmark"
+reg_name <- "rpf_batchmark_multiclass"
 reg_dir <- here::here("registry", reg_name)
 # Comment this line to prevent stored registry deletion on accident
 # unlink(reg_dir, recursive = TRUE)
@@ -143,13 +143,9 @@ reg_dir <- here::here("registry", reg_name)
 if (!dir.exists("registry")) dir.create("registry")
 
 if (dir.exists(reg_dir)) { # if current registry exists, we continue on
-
   loadRegistry(reg_dir, writeable = TRUE)
-
 } else { # If registry doesn't exist yet: make registry and batchmark
-
   reg <- makeExperimentRegistry(reg_dir, seed = 230749)
-
   # Ensure store_models = TRUE to access to tuning archives
   batchmark(design, reg = reg, store_models = TRUE)
 }
@@ -165,71 +161,29 @@ ids_xgb <- findExperiments(algo.pars = learner_id == "encode.classif.xgboost.tun
 ids_xgb_fixdepth <- findExperiments(algo.pars = learner_id == "encode.classif.xgboost_fixdepth.tuned")
 ids_ranger <- findExperiments(algo.pars = learner_id == "classif.ranger.tuned")
 
+# Get full overview of tasks and select multiclass with n*p <= 100.000
 task_summary <- readRDS("task_summary.rds")
+small_tasks <- subset(task_summary, dim <= 1e5 & !twoclass)
 
-# Tasks with n*p <= kc2, 7th smallest task
-# small_tasks <- task_summary |> subset(dim <= 10962)
-small_tasks <- task_summary |> subset(dim <= 1e5)
-
-# should have kept original task names in task_summary...
-small_task_ids <- sapply(seq_len(nrow(small_tasks)), function(x) {
-  sprintf("Task %d: %s (Supervised Classification)", small_tasks[x, "task_id"], small_tasks[x, "task_name"])
-})
-
-# Jobs for small tasks
-jobs_small_task_ids <- findExperiments(prob.pars = task_id %in% small_task_ids)
-
-# ijoin with rpf/rpf_fixmax jobs
+# Job IDs for small tasks
+jobs_small_task_ids <- findExperiments(prob.pars = task_id %in% small_tasks$task_name_full)
 small_jobs_rpf <- ijoin(jobs_small_task_ids, rbind(ids_rpf, ids_rpf_fixmax))
-
 
 # Submit ------------------------------------------------------------------
 
 if (grepl("node\\d{2}|bipscluster", system("hostname", intern = TRUE))) {
   #ids <- findNotStarted()
-  ids <- small_jobs_rpf
+  ids <- jobs_small_task_ids
   ids[, chunk := chunk(job.id, chunk.size = 50)]
   submitJobs(ids = ids, # walltime in seconds, 10 days max, memory in MB
              resources = list(name = reg_name, chunks.as.arrayjobs = TRUE,
                               ncpus = 1, memory = 6000, walltime = 10*24*3600,
                               max.concurrent.jobs = 400))
-# } else if (grepl("glogin\\d+", system("hostname", intern = TRUE))) {
-#   ids <- findErrors()
-#   ids[, chunk := chunk(job.id, chunk.size = 10)]
-#   submitJobs(ids = ids, # walltime in seconds, 10 days max, memory in MB
-#              resources = list(name = reg_name, chunks.as.arrayjobs = FALSE,
-#                               partition = "large40", ntasks = 10, # ntaskspernode depends on partition
-#                               max.concurrent.jobs = 8000,
-#                               #partition = "large40:shared",
-#                               # medium40:test - 1h walltime
-#                               # medium40 - 48h walltime
-#                               ncpus = 1, walltime = 3600*48))
 } else {
-  # small tasks first
-  submitJobs(findNotSubmitted(jobs_small_task_ids))
+  # small tasks rpf first
+  submitJobs(findNotSubmitted(small_jobs_rpf))
   # then everything else that's not done already
-  submitJobs(findNotDone())
-}
-
-# to submit only certain algorithms/tasks:
-if (FALSE) {
-  # only rpf jobs, or only xgboost jobs
-  ids_rpf <- findExperiments(algo.pars = learner_id == "classif.rpf.tuned")
-  ids_rpf_fixmax <- findExperiments(algo.pars = learner_id == "classif.rpf_fixmax.tuned")
-  ids_xgb <- findExperiments(algo.pars = learner_id == "encode.classif.xgboost.tuned")
-  ids_xgb_fixdepth <- findExperiments(algo.pars = learner_id == "encode.classif.xgboost_fixdepth.tuned")
-  ids_ranger <- findExperiments(algo.pars = learner_id == "classif.ranger.tuned")
-
-  # only a specific task
-  ids_wilt <- findExperiments(prob.pars = task_id == "Task 146820: wilt (Supervised Classification)")
-  ids_diabetes <- findExperiments(prob.pars = task_id == "Task 37: diabetes (Supervised Classification)")
-
-  # only rpf on one task
-  ids_rpf_wilt <- ijoin(ids_wilt, ids_rpf)
-  # ids_rpf_diabetes <- ijoin(ids_diabetes, ids_rpf)
-  submitJobs(ids = ids_rpf_wilt)
-
-  # See unwrap(getJobPars()) for all task_ids and learner_ids
+  submitJobs(findNotDone(jobs_small_task_ids))
 }
 
 waitForJobs()

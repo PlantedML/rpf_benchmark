@@ -24,6 +24,7 @@ task_info <- do.call(rbind, lapply(task_ids, function(task_id) {
 
   data.frame(
     task_id = task_id,
+    task_name_full = task$id,
     task_name = task_name,
     twoclass = ("twoclass" %in% task$properties),
     featuretypes = all(task$feature_types$type %in% c("integer", "numeric", "factor")), # disallow logical
@@ -38,22 +39,23 @@ task_info <- do.call(rbind, lapply(task_ids, function(task_id) {
 # Select for required properties
 # Include multiclass, restrict to non-logical features + no missing data
 task_info <- subset(task_info, featuretypes & nomissing)
-# task_info <- subset(task_info, twoclass & featuretypes & nomissing)
 
 # Rank & sort by dimensionality
 task_info$dim_rank <- rank(task_info$dim)
 task_info <- task_info[order(task_info$dim_rank), ]
 
+# Save for later reference
+saveRDS(task_info, "task_summary.rds")
+
+# Sub-selections for binary and multiclass benchmarks -----
+
 # Rough heuristic: n * p smaller than 7e5, since 723376 for "bank-marketing" is already v slow
 task_info_binary <- subset(task_info, dim <= 7e5 & twoclass)
-task_ids_selected <- task_info_binary[["task_id"]]
+task_ids_binary <- task_info_binary[["task_id"]]
 
 task_info_multiclass <- subset(task_info, dim <= 1e5 & !twoclass)
 task_ids_multiclass <- task_info_multiclass[["task_id"]]
 
 # This object is what counts, as it is used in batchmark.R
-tasks <- lapply(task_ids_selected, tsk, .key = "oml")
+tasks <- lapply(task_ids_binary, tsk, .key = "oml")
 tasks_multiclass <- lapply(task_ids_multiclass, tsk, .key = "oml")
-
-# Save for later reference
-saveRDS(task_info, "task_summary.rds")

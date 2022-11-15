@@ -1,7 +1,12 @@
 #! /usr/bin/env Rscript
 # monitor current status
+#
+
+# infer registry name from cli args
+argv <- commandArgs(TRUE)
+
 library(batchtools)
-reg_name <- "rpf_batchmark"
+reg_name <- if (is.null(argv[[1]])) "rpf_batchmark" else argv[[1]]
 reg_dir <- here::here("registry", reg_name)
 loadRegistry(reg_dir, writeable = FALSE)
 
@@ -22,7 +27,7 @@ if (nrow(tbl_running) > 0) {
 cli::cli_h1("Done")
 tbl_done <- unwrap(getJobTable(findDone()))
 if (nrow(tbl_done) > 0) {
-  tbl_done <- tbl_done[, c("job.id", "time.running", "task_id", "learner_id")]	
+  tbl_done <- tbl_done[, c("job.id", "time.running", "task_id", "learner_id")]
   tbl_done[, .(count = .N), by = learner_id]
 }
 
