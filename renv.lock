@@ -549,6 +549,14 @@
         "nlme"
       ]
     },
+    "microbenchmark": {
+      "Package": "microbenchmark",
+      "Version": "1.4.9",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Hash": "7001412b0204877d34dd8f46b04fde62",
+      "Requirements": []
+    },
     "mime": {
       "Package": "mime",
       "Version": "0.12",
@@ -867,8 +875,8 @@
       "RemoteUsername": "PlantedML",
       "RemoteRepo": "randomPlantedForest",
       "RemoteRef": "master",
-      "RemoteSha": "87607c2ad7a0a0ab1f4d3559a406cf4ff69091d0",
-      "Hash": "f13a154ad7bedd1c85b6b424b258525d",
+      "RemoteSha": "bc009f2c782d67c50a3364c3f631a6241df33f6a",
+      "Hash": "f85bb0045fb038fe5442102bc31f8f65",
       "Requirements": [
         "Rcpp",
         "checkmate",
