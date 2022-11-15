@@ -14,22 +14,21 @@ loadRegistry(reg_dir, writeable = TRUE)
 task_summary <- readRDS("task_summary.rds")
 
 # Get results, cache them
-bmr <- reduceResultsBatchmark()
-saveRDS(bmr, "bmr.rds")
+if (file.exists("bmr.rds")) {
+  bmr <- readRDS("bmr.rds")
+} else {
+  bmr <- reduceResultsBatchmark()
+  saveRDS(bmr, "bmr.rds")
+}
 
 # Aggregate
 aggr <- bmr$aggregate(measures = mymsr)
-aggr[, learner_name := gsub("\\.tuned", "", gsub("classif\\.", "", learner_id))]
+aggr[, learner_name := gsub("\\.tuned", "", gsub("(encode\\.)?classif\\.", "", learner_id))]
 
-
-# Optional: Only tasks for which we have results of all four learners
-# completed_tasks <- aggr[, names(which(table(task_id) == 4))]
-# aggr <- aggr[task_id %in% completed_tasks, ]
-# bmr$filter(task_ids = completed_tasks)
 
 # Plot over individual datasets
 scores <- bmr$score(measures = mymsr)
-scores[, learner_name := gsub("\\.tuned", "", gsub("classif\\.", "", learner_id))]
+scores[, learner_name := gsub("\\.tuned", "", gsub("(encode\\.)?classif\\.", "", learner_id))]
 scores[, task_name := gsub(" \\(Supervised Classification\\)", "", gsub("Task \\d+: ", "", task_id))]
 
 # Sort task_name levels by n * p from task_summary
@@ -84,5 +83,29 @@ ggsave("aggr.pdf", width = 12, height = 7)
 # Tuning results -------------------------------------------------------------------------------------------------
 library(mlr3tuning)
 
+# tuning archive: all tested hpc's
 tuning_archive <- extract_inner_tuning_archives(bmr)
+
+# params_rpf <- c("loss", "splits", "split_try", "t_try", "max_interaction_ratio")
+# params_rpf_fixmax <- c("loss", "splits", "split_try", "t_try")
+
+tuning_archive_rpf <- tuning_archive[learner_id == "classif.rpf.tuned", ]
+tuning_archive_rpf <- tuning_archive_rpf[, c("loss", "splits", "split_try", "t_try", "max_interaction_ratio", "learner_id", "task_id", "classif.auc", "runtime_learners", "batch_nr", "experiment", "iteration")]
+
+tuning_archive_rpf_fixmax <- tuning_archive[learner_id == "classif.rpf_fixmax.tuned", ]
+tuning_archive_rpf_fixmax <- tuning_archive_rpf_fixmax[, c("loss", "splits", "split_try", "t_try", "learner_id", "task_id", "classif.auc", "runtime_learners", "batch_nr", "experiment", "iteration")]
+
+saveRDS(tuning_archive_rpf, "tuning_archive_rpf.rds")
+saveRDS(tuning_archive_rpf_fixmax, "tuning_archive_rpf_fixmax.rds")
+
+# tuning results: only best configuration
 tuning_results <- extract_inner_tuning_results(bmr)
+
+tuning_results_rpf <- tuning_results[learner_id == "classif.rpf.tuned", ]
+tuning_results_rpf <- tuning_results_rpf[, c("loss", "splits", "split_try", "t_try", "max_interaction_ratio", "learner_id", "task_id", "classif.auc", "experiment", "iteration")]
+
+tuning_results_rpf_fixmax <- tuning_results[learner_id == "classif.rpf_fixmax.tuned", ]
+tuning_results_rpf_fixmax <- tuning_results_rpf_fixmax[, c("loss", "splits", "split_try", "t_try", "learner_id", "task_id", "classif.auc", "experiment", "iteration")]
+
+saveRDS(tuning_results_rpf, "tuning_results_rpf.rds")
+saveRDS(tuning_results_rpf_fixmax, "tuning_results_rpf_fixmax.rds")
