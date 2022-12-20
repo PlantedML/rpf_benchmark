@@ -6,3 +6,6 @@ registry/
 
 *png
 *pdf
+
+data/*rds
+results_files

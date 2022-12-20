@@ -1,0 +1,267 @@
+---
+title: "Classification Benchmark Results"
+author: "Lukas"
+format: 
+  html:
+    code-fold: true
+    fig-align: center
+    toc: true
+    date: now
+---
+
+```{r setup}
+#| message: false
+#| warning: false
+library(ggplot2)
+library(mlr3)
+library(mlr3batchmark)
+library(mlr3viz)
+library(mlr3tuning)
+library(data.table)
+
+# benchmark results
+bmr_binary <- readRDS("data/bmr-binary.rds")
+bmr_multiclass <- readRDS("data/bmr-multiclass.rds")
+
+# Load task metadata
+task_summary <- as.data.table(readRDS("task_summary.rds"))
+
+# measures for evaluation
+msr_binary <- msrs(c("classif.auc", "classif.bbrier"))
+msr_multiclass <- msrs(c("classif.mauc_aunp", "classif.mbrier"))
+
+# Define learner colors for somewhat identifiable plots
+learner_cols <- c(
+  "ranger" = "#2171B5",
+  "xgboost" = "#3BA99C",
+  "xgboost_fixdepth" = "#256A62",
+  "rpf" = "#F73098",
+  "rpf_fixmax" = "#CA1694"
+)
+```
+
+## Binary Classification
+
+```{r prep-binary}
+aggr_binary <- bmr_binary$aggregate(measures = msr_binary)
+aggr_binary[, learner_name := gsub("\\.tuned", "", gsub("(encode\\.)?classif\\.", "", learner_id))]
+
+aggr_binary_long <- melt(aggr_binary, measure.vars = c("classif.auc", "classif.bbrier"), variable.name = "measure")
+aggr_binary_long[, measure := gsub("^classif\\.", "", measure)]
+
+scores_binary <- bmr_binary$score(measures = msr_binary)
+scores_binary[, learner_name := gsub("\\.tuned", "", gsub("(encode\\.)?classif\\.", "", learner_id))]
+scores_binary[, c("task", "learner", "resampling", "prediction", "resampling_id") := NULL]
+scores_binary <- scores_binary[task_summary[, -c("task_id")], on = c("task_id" = "task_name_full"), nomatch = 0]
+
+# Sort task_name levels by n * p from task_summary
+scores_binary[, task_name := factor(task_name, levels = task_summary$task_name)]
+scores_binary_long <- melt(scores_binary, measure.vars = c("classif.auc", "classif.bbrier"), variable.name = "measure")
+```
+
+### Aggregated Results
+
+```{r binary-aggregated}
+#| fig-width: 12
+#| fig-height: 7
+#| fig-align: center
+#| column: screen-inset-shaded
+
+ggplot(aggr_binary_long, aes(x = learner_name, y = value, fill = learner_name)) +
+  facet_wrap(vars(measure), ncol = 2, scales = "free_y") +
+  geom_boxplot(alpha = .5) +
+  geom_point(position = position_jitterdodge(dodge.width = .25)) +
+  scale_y_continuous(labels = scales::percent) +
+  #scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+  #coord_cartesian(ylim = c(0, 1)) +
+  #coord_flip() +
+  scale_fill_manual(values = learner_cols, guide = "none") +
+  labs(
+    title = "Binary Classification: Aggregated scores over all tasks",
+    x = "Learner", y = "Score"
+  ) +
+  theme_minimal(base_size = 14)
+
+# ggsave("plots/binary-aggr.png", width = 12, height = 7, bg = "white")
+# ggsave("plots/binary-aggr.pdf", width = 12, height = 7)
+
+```
+
+### Results per Task
+
+```{r binary-per-task}
+#| fig-width: 12
+#| fig-height: 7
+#| fig-align: center
+#| column: screen-inset-shaded
+
+ggplot(scores_binary, aes(x = learner_name, y = classif.auc, fill = learner_name)) +
+  facet_wrap(vars(task_name), ncol = 4) +
+  geom_boxplot(alpha = .5) +
+  geom_point() +
+  scale_fill_manual(values = learner_cols, guide = "none") +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = "Scores per task",
+    subtitle = "Tasks ordered by n * p, decreasing",
+    x = "Learner", y = "AUC (%)"
+  ) +
+  theme_minimal()
+
+# ggsave("plots/binary-pertask-auc.png", width = 12, height = 7, bg = "white")
+# ggsave("plots/binary-pertask-auc.pdf", width = 12, height = 7)
+
+ggplot(scores_binary, aes(y = learner_name, x = classif.auc, fill = learner_name)) +
+  facet_wrap(vars(task_name)) +
+  geom_boxplot(alpha = .5) +
+  geom_point() +
+  scale_fill_manual(values = learner_cols, guide = "none") +
+  scale_x_continuous(labels = scales::percent) +
+  labs(
+    title = "Binary classification scores per task",
+    subtitle = "Tasks ordered by n * p, decreasing",
+    y = "Learner", x = "AUC (%)"
+  ) +
+  theme_minimal() +
+  theme(
+    panel.spacing.x = unit(1, "cm")
+  )
+
+# ggsave("plots/binary-pertask-auc-flip.png", width = 12, height = 7, bg = "white")
+# ggsave("plots/binary-pertask-auc-flip.pdf", width = 12, height = 7)
+
+ggplot(scores_binary, aes(y = learner_name, x = classif.bbrier, fill = learner_name)) +
+  facet_wrap(vars(task_name)) +
+  geom_boxplot(alpha = .5) +
+  geom_point() +
+  scale_fill_manual(values = learner_cols, guide = "none") +
+  scale_x_continuous(labels = scales::percent) +
+  labs(
+    title = "Binary classification scores per task",
+    subtitle = "Tasks ordered by n * p, decreasing",
+    y = "Learner", x = "Brier Score (%)"
+  ) +
+  theme_minimal() +
+  theme(
+    panel.spacing.x = unit(1, "cm")
+  )
+
+# ggsave("plots/binary-pertask-brier-flip.png", width = 12, height = 7, bg = "white")
+# ggsave("plots/binary-pertask-brier-flip.pdf", width = 12, height = 7)
+
+```
+
+
+## Multiclass Classification
+
+```{r prep-multiclass}
+aggr_multiclass <- bmr_multiclass$aggregate(measures = msr_multiclass)
+aggr_multiclass[, learner_name := gsub("\\.tuned", "", gsub("(encode\\.)?classif\\.", "", learner_id))]
+
+aggr_multiclass_long <- melt(aggr_multiclass, measure.vars = c("classif.mauc_aunp", "classif.mbrier"), variable.name = "measure")
+aggr_multiclass_long[, measure := gsub("^classif\\.", "", measure)]
+
+scores_multiclass <- bmr_multiclass$score(measures = msrs(c("classif.mauc_aunp", "classif.mbrier")))
+scores_multiclass[, learner_name := gsub("\\.tuned", "", gsub("(encode\\.)?classif\\.", "", learner_id))]
+scores_multiclass[, c("task", "learner", "resampling", "prediction", "resampling_id") := NULL]
+scores_multiclass <- scores_multiclass[task_summary[, -c("task_id")], on = c("task_id" = "task_name_full"), nomatch = 0]
+
+# Sort task_name levels by n * p from task_summary
+scores_multiclass[, task_name := factor(task_name, levels = task_summary$task_name)]
+scores_multiclass_long <- melt(scores_multiclass, measure.vars = c("classif.mauc_aunp", "classif.mbrier"), variable.name = "measure")
+
+```
+
+### Aggregated Results
+
+```{r multiclass-aggregated}
+#| fig-width: 12
+#| fig-height: 7
+#| fig-align: center
+#| column: screen-inset-shaded
+
+ggplot(aggr_multiclass_long, aes(x = learner_name, y = value, fill = learner_name)) +
+  facet_wrap(vars(measure), ncol = 2, scales = "free") +
+  geom_boxplot(alpha = .5) +
+  geom_point(position = position_jitterdodge(dodge.width = .25)) +
+  scale_y_continuous(labels = scales::percent) +
+  #scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+  #coord_cartesian(ylim = c(0, 1)) +
+  #coord_flip() +
+  scale_fill_manual(values = learner_cols, guide = "none") +
+  labs(
+    title = "Multiclass Classification: Aggregated scores over all tasks",
+    x = "Learner", y = "Score"
+  ) +
+  theme_minimal(base_size = 14)
+
+# ggsave("plots/multiclass-aggr.png", width = 12, height = 7, bg = "white")
+# ggsave("plots/multiclass-aggr.pdf", width = 12, height = 7)
+```
+
+### Results per Task
+
+```{r multiclass-per-task}
+#| fig-width: 12
+#| fig-height: 7
+#| fig-align: center
+#| column: screen-inset-shaded
+
+ggplot(scores_multiclass, aes(x = learner_name, y = classif.mauc_aunp, fill = learner_name)) +
+  facet_wrap(vars(task_name), ncol = 4, scales = "free_y") +
+  geom_boxplot(alpha = .5) +
+  geom_point() +
+  scale_fill_manual(values = learner_cols, guide = "none") +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = "Multiclass scores per task",
+    subtitle = "Tasks ordered by n * p, decreasing",
+    x = "Learner", y = "AUC (%)"
+  ) +
+  theme_minimal()
+
+# ggsave("plots/multiclass-pertask-auc.png", width = 12, height = 7, bg = "white")
+# ggsave("plots/multiclass-pertask-auc.pdf", width = 12, height = 7)
+
+ggplot(scores_multiclass, aes(y = learner_name, x = classif.mauc_aunp, fill = learner_name)) +
+  facet_wrap(vars(task_name), scales = "free_x") +
+  geom_boxplot(alpha = .5) +
+  geom_point() +
+  scale_fill_manual(values = learner_cols, guide = "none") +
+  scale_x_continuous(labels = scales::percent) +
+  labs(
+    title = "Multiclass scores per task",
+    subtitle = "Tasks ordered by n * p, decreasing",
+    y = "Learner", x = "AUC (%)"
+  ) +
+  theme_minimal() +
+  theme(
+    panel.spacing.x = unit(1, "cm")
+  )
+
+# ggsave("plots/multiclass-pertask-auc-flip.png", width = 12, height = 7, bg = "white")
+# ggsave("plots/multiclass-pertask-auc-flip.pdf", width = 12, height = 7)
+
+ggplot(scores_multiclass, aes(y = learner_name, x = classif.mbrier, fill = learner_name)) +
+  facet_wrap(vars(task_name), scales = "free") +
+  geom_boxplot(alpha = .5) +
+  geom_point() +
+  scale_fill_manual(values = learner_cols, guide = "none") +
+  scale_x_continuous(labels = scales::percent) +
+  labs(
+    title = "Scores per task",
+    subtitle = "Tasks ordered by n * p, decreasing",
+    y = "Learner", x = "Brier Score (%)"
+  ) +
+  theme_minimal() +
+  theme(
+    panel.spacing.x = unit(1, "cm")
+  )
+
+# ggsave("plots/multiclass-pertask-brier-flip.png", width = 12, height = 7, bg = "white")
+# ggsave("plots/multiclass-pertask-brier-flip.pdf", width = 12, height = 7)
+
+```
+
