@@ -8,4 +8,6 @@ registry/
 *pdf
 
 data/*rds
+results.html
 results_files
+upload.sh
