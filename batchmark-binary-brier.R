@@ -27,7 +27,7 @@ if (FALSE) {
 # Settings
 resample_outer <- rsmp("cv", folds = 10)
 resample_inner <- rsmp("cv", folds = 5)
-mymsr <- msr("classif.auc")
+mymsr <- msr("classif.bbrier")
 # mytrm <- trm("evals", n_evals = 50) # Trial mode
 mytrm <- trm("evals", n_evals = 200)  # Serious mode
 mytnr <- tnr("random_search")
@@ -134,7 +134,7 @@ design <- benchmark_grid(
 
 # Registry setup ----------------------------------------------------------
 
-reg_name <- "rpf_batchmark"
+reg_name <- "rpf_batchmark_binary_brier"
 reg_dir <- here::here("registry", reg_name)
 # Comment this line to prevent stored registry deletion on accident
 # unlink(reg_dir, recursive = TRUE)

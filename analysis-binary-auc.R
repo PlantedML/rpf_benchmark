@@ -10,12 +10,12 @@ if (!dir.exists("data")) dir.create("data")
 if (!dir.exists("plots")) dir.create("plots")
 
 # Get results, cache them
-if (file.exists("data/bmr-binary.rds")) {
+if (file.exists("data/bmr-binary-auc.rds")) {
 
-  bmr <- readRDS("data/bmr-binary.rds")
+  bmr <- readRDS("data/bmr-binary-auc.rds")
 
 } else {
-  reg_name <- "rpf_batchmark"
+  reg_name <- "rpf_batchmark_binary_auc"
   reg_dir <- here::here("registry", reg_name)
   loadRegistry(reg_dir, writeable = TRUE)
   tictoc::tic()
@@ -39,7 +39,7 @@ if (file.exists("data/bmr-binary.rds")) {
   # remove original resampling results to save space
   tuning_archive_rpf[, resample_result := NULL]
 
-  saveRDS(tuning_archive_rpf, "data/tuning_archive_rpf-binary.rds")
+  saveRDS(tuning_archive_rpf, "data/tuning_archive_rpf-binary-auc.rds")
 
   # tuning results: only best configuration
   tictoc::tic()
@@ -53,11 +53,11 @@ if (file.exists("data/bmr-binary.rds")) {
   # remove redundant x_domain columns since we don't have transformations
   tuning_results_rpf <- tuning_results_rpf[, which(!startsWith(names(tuning_results_rpf), "x_domain")), with = FALSE]
 
-  saveRDS(tuning_results_rpf, "data/tuning_results_rpf-binary.rds")
+  saveRDS(tuning_results_rpf, "data/tuning_results_rpf-binary-auc.rds")
 
   # Now that tuning archives/results are stored, we can remove models from the bmr object
   bmr$discard(models = TRUE)
-  saveRDS(bmr, "data/bmr-binary.rds")
+  saveRDS(bmr, "data/bmr-binary-auc.rds")
 }
 
 

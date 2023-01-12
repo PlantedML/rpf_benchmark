@@ -10,12 +10,12 @@ if (!dir.exists("data")) dir.create("data")
 if (!dir.exists("plots")) dir.create("plots")
 
 # Get results, cache them
-if (file.exists("data/bmr-multiclass.rds")) {
+if (file.exists("data/bmr-multiclass-auc.rds")) {
 
-  bmr <- readRDS("data/bmr-multiclass.rds")
+  bmr <- readRDS("data/bmr-multiclass-auc.rds")
 
 } else {
-  reg_name <- "rpf_batchmark_multiclass"
+  reg_name <- "rpf_batchmark_multiclass_auc"
   reg_dir <- here::here("registry", reg_name)
   loadRegistry(reg_dir, writeable = TRUE)
   tictoc::tic()
@@ -39,7 +39,7 @@ if (file.exists("data/bmr-multiclass.rds")) {
   # remove original resampling results to save space
   tuning_archive_rpf[, resample_result := NULL]
 
-  saveRDS(tuning_archive_rpf, "data/tuning_archive_rpf-multiclass.rds")
+  saveRDS(tuning_archive_rpf, "data/tuning_archive_rpf-multiclass-auc.rds")
 
   # tuning results: only best configuration
   tictoc::tic()
@@ -53,11 +53,11 @@ if (file.exists("data/bmr-multiclass.rds")) {
   # remove redundant x_domain columns since we don't have transformations
   tuning_results_rpf <- tuning_results_rpf[, which(!startsWith(names(tuning_results_rpf), "x_domain")), with = FALSE]
 
-  saveRDS(tuning_results_rpf, "data/tuning_results_rpf-multiclass.rds")
+  saveRDS(tuning_results_rpf, "data/tuning_results_rpf-multiclass-auc.rds")
 
   # Now that tuning archives/results are stored, we can remove models from the bmr object
   bmr$discard(models = TRUE)
-  saveRDS(bmr, "data/bmr-multiclass.rds")
+  saveRDS(bmr, "data/bmr-multiclass-auc.rds")
 }
 
 
