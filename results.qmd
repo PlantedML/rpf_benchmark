@@ -1,12 +1,28 @@
 ---
-title: "Classification Benchmark Results"
+title: "RPF Classification Benchmark Results"
 author: "Lukas"
+date: now
+date-format: "YYYY-MM-DD HH:mm z"
+date-modified: last-modified
 format: 
   html:
     code-fold: true
     fig-align: center
     toc: true
+  pdf: 
+    documentclass: article
+    fig-align: center
+    toc: true
     date: now
+    keep-tex: true
+    knitr: 
+      opts_chunk: 
+        echo: false
+        fig.pos: H
+    include-in-header: 
+      - \usepackage{float}
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup}
@@ -14,10 +30,12 @@ format:
 #| warning: false
 library(ggplot2)
 library(mlr3)
-library(mlr3batchmark)
-library(mlr3viz)
-library(mlr3tuning)
+#library(mlr3batchmark)
+#library(mlr3viz)
+#library(mlr3tuning)
 library(data.table)
+library(dplyr)
+library(kableExtra)
 
 # benchmark results
 bmr_binary <- readRDS("data/bmr-binary.rds")
@@ -38,9 +56,17 @@ learner_cols <- c(
   "rpf" = "#F73098",
   "rpf_fixmax" = "#CA1694"
 )
+
+set.seed(3) # Only for jitterdodge consistency
 ```
 
+
 ## Binary Classification
+
+- Tuning on: [AUC](https://mlr3.mlr-org.com/reference/mlr_measures_classif.auc.html)
+- Evaluation on:
+    -  [AUC](https://mlr3.mlr-org.com/reference/mlr_measures_classif.auc.html)
+    -  [Binary Brier](https://mlr3.mlr-org.com/reference/mlr_measures_classif.bbrier.html)
 
 ```{r prep-binary}
 aggr_binary <- bmr_binary$aggregate(measures = msr_binary)
@@ -59,7 +85,30 @@ scores_binary[, task_name := factor(task_name, levels = task_summary$task_name)]
 scores_binary_long <- melt(scores_binary, measure.vars = c("classif.auc", "classif.bbrier"), variable.name = "measure")
 ```
 
+### Tasks
+
+[OpenML CC18](https://www.openml.org/search?type=study&study_type=task&id=99) tasks with:
+
+- Binary target
+- No missing values
+- $n \cdot p \leq 10^5$
+
+```{r binary-tasks}
+task_summary |>
+  filter(twoclass & dim <= 1e5) |>
+  select(task_id, task_name, n, p, dim) |>
+  kbl(
+    caption = "Selected OpenML CC18 tasks for binary classification",
+    col.names = c("ID", "Task", "n", "p", "np"),
+    booktabs = TRUE
+  ) |>
+  kable_styling()
+```
+
+
 ### Aggregated Results
+
+#### Boxplot
 
 ```{r binary-aggregated}
 #| fig-width: 12
@@ -67,29 +116,68 @@ scores_binary_long <- melt(scores_binary, measure.vars = c("classif.auc", "class
 #| fig-align: center
 #| column: screen-inset-shaded
 
-ggplot(aggr_binary_long, aes(x = learner_name, y = value, fill = learner_name)) +
-  facet_wrap(vars(measure), ncol = 2, scales = "free_y") +
-  geom_boxplot(alpha = .5) +
-  geom_point(position = position_jitterdodge(dodge.width = .25)) +
-  scale_y_continuous(labels = scales::percent) +
-  #scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
-  #coord_cartesian(ylim = c(0, 1)) +
-  #coord_flip() +
-  scale_fill_manual(values = learner_cols, guide = "none") +
-  labs(
-    title = "Binary Classification: Aggregated scores over all tasks",
-    x = "Learner", y = "Score"
-  ) +
-  theme_minimal(base_size = 14)
-
-# ggsave("plots/binary-aggr.png", width = 12, height = 7, bg = "white")
-# ggsave("plots/binary-aggr.pdf", width = 12, height = 7)
-
+aggr_binary_long |>
+  mutate(
+    measure = case_when(
+      measure == "auc" ~ "AUC",
+      measure == "bbrier" ~ "Brier Score"
+    )
+  ) |>
+  ggplot(aes(x = learner_name, y = value, fill = learner_name)) +
+    facet_wrap(vars(measure), ncol = 2, scales = "free_y") +
+    geom_boxplot(alpha = .5) +
+    geom_point(position = position_jitterdodge(dodge.width = .25)) +
+    scale_y_continuous(labels = scales::percent) +
+    #scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+    #coord_cartesian(ylim = c(0, 1)) +
+    #coord_flip() +
+    scale_fill_manual(values = learner_cols, guide = "none") +
+    labs(
+      title = "Binary Classification: Aggregated scores over all tasks",
+      x = NULL, y = "Score"
+    ) +
+    theme_minimal(base_size = 14)
 ```
+
+#### Table
+
+```{r binary-aggregated-table}
+# column: screen-inset-shaded
+aggr_binary_long |>
+  group_by(learner_name, measure) |>
+  summarize(
+    mean = mean(value),
+    median = median(value),
+    sd = sd(value),
+    q25 = quantile(value, .25),
+    q75 = quantile(value, .75),
+    .groups = "drop"
+  ) |>
+  mutate(across(where(is.numeric), \(x) round(100 * x, 1))) |>
+  mutate(
+    mean = glue::glue("{mean} [{sd}]"),
+    median = glue::glue("{median} [{q25}; {q75}]")
+  ) |>
+  select(-sd, -q25, -q75) |>
+  tidyr::pivot_wider(names_from = measure, names_sep = "_", values_from = mean:median) |>
+  select(learner_name, ends_with("auc"), ends_with("brier")) |>
+  kbl(
+    col.names = c("Learner", rep(c("Mean [SD]", "Median [q25; q75]"), 2)),
+    booktabs = TRUE
+  ) |>
+  kable_styling(full_width = TRUE, latex_options = c("HOLD_position")) |>
+  add_header_above(header = c(" " = 1, "AUC (%)" = 2, "Brier Score (%)" = 2)) |>
+  column_spec(1, "4cm") |>
+  column_spec(2, "2.3cm") |>
+  column_spec(3, "3cm") |>
+  column_spec(4, "2.3cm") |>
+  column_spec(5, "3cm")
+```
+
 
 ### Results per Task
 
-```{r binary-per-task}
+```{r binary-per-task-auc}
 #| fig-width: 12
 #| fig-height: 7
 #| fig-align: center
@@ -108,9 +196,14 @@ ggplot(scores_binary, aes(x = learner_name, y = classif.auc, fill = learner_name
     x = "Learner", y = "AUC (%)"
   ) +
   theme_minimal()
+```
 
-# ggsave("plots/binary-pertask-auc.png", width = 12, height = 7, bg = "white")
-# ggsave("plots/binary-pertask-auc.pdf", width = 12, height = 7)
+
+```{r binary-per-task-auc-flip}
+#| fig-width: 12
+#| fig-height: 7
+#| fig-align: center
+#| column: screen-inset-shaded
 
 ggplot(scores_binary, aes(y = learner_name, x = classif.auc, fill = learner_name)) +
   facet_wrap(vars(task_name)) +
@@ -127,9 +220,14 @@ ggplot(scores_binary, aes(y = learner_name, x = classif.auc, fill = learner_name
   theme(
     panel.spacing.x = unit(1, "cm")
   )
+```
 
-# ggsave("plots/binary-pertask-auc-flip.png", width = 12, height = 7, bg = "white")
-# ggsave("plots/binary-pertask-auc-flip.pdf", width = 12, height = 7)
+
+```{r binary-per-task-brier}
+#| fig-width: 12
+#| fig-height: 7
+#| fig-align: center
+#| column: screen-inset-shaded
 
 ggplot(scores_binary, aes(y = learner_name, x = classif.bbrier, fill = learner_name)) +
   facet_wrap(vars(task_name)) +
@@ -146,14 +244,15 @@ ggplot(scores_binary, aes(y = learner_name, x = classif.bbrier, fill = learner_n
   theme(
     panel.spacing.x = unit(1, "cm")
   )
-
-# ggsave("plots/binary-pertask-brier-flip.png", width = 12, height = 7, bg = "white")
-# ggsave("plots/binary-pertask-brier-flip.pdf", width = 12, height = 7)
-
 ```
 
 
 ## Multiclass Classification
+
+- Tuning on: [AUNP](https://mlr3.mlr-org.com/reference/mlr_measures_classif.mauc_aunp.html)
+- Evaluation on:
+    -  [AUNP](https://mlr3.mlr-org.com/reference/mlr_measures_classif.mauc_aunp.html)
+    -  [Multiclass Brier](https://mlr3.mlr-org.com/reference/mlr_measures_classif.mbrier.html)
 
 ```{r prep-multiclass}
 aggr_multiclass <- bmr_multiclass$aggregate(measures = msr_multiclass)
@@ -170,10 +269,31 @@ scores_multiclass <- scores_multiclass[task_summary[, -c("task_id")], on = c("ta
 # Sort task_name levels by n * p from task_summary
 scores_multiclass[, task_name := factor(task_name, levels = task_summary$task_name)]
 scores_multiclass_long <- melt(scores_multiclass, measure.vars = c("classif.mauc_aunp", "classif.mbrier"), variable.name = "measure")
+```
 
+### Tasks
+
+[OpenML CC18](https://www.openml.org/search?type=study&study_type=task&id=99) tasks with:
+
+- Multiclass target
+- No missing values
+- $n \cdot p \leq 10^5$
+
+```{r multiclass-tasks}
+task_summary |>
+  filter(!twoclass & dim <= 1e5) |>
+  select(task_id, task_name, n, p, dim) |>
+  kbl(
+    caption = "Selected OpenML CC18 tasks for multiclass classification",
+    col.names = c("ID", "Task", "n", "p", "np"),
+    booktabs = TRUE
+  ) |>
+  kable_styling()
 ```
 
 ### Aggregated Results
+
+#### Boxplot
 
 ```{r multiclass-aggregated}
 #| fig-width: 12
@@ -181,28 +301,68 @@ scores_multiclass_long <- melt(scores_multiclass, measure.vars = c("classif.mauc
 #| fig-align: center
 #| column: screen-inset-shaded
 
-ggplot(aggr_multiclass_long, aes(x = learner_name, y = value, fill = learner_name)) +
-  facet_wrap(vars(measure), ncol = 2, scales = "free") +
-  geom_boxplot(alpha = .5) +
-  geom_point(position = position_jitterdodge(dodge.width = .25)) +
-  scale_y_continuous(labels = scales::percent) +
-  #scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
-  #coord_cartesian(ylim = c(0, 1)) +
-  #coord_flip() +
-  scale_fill_manual(values = learner_cols, guide = "none") +
-  labs(
-    title = "Multiclass Classification: Aggregated scores over all tasks",
-    x = "Learner", y = "Score"
-  ) +
-  theme_minimal(base_size = 14)
-
-# ggsave("plots/multiclass-aggr.png", width = 12, height = 7, bg = "white")
-# ggsave("plots/multiclass-aggr.pdf", width = 12, height = 7)
+aggr_multiclass_long |>
+  mutate(
+    measure = case_when(
+      measure == "mauc_aunp" ~ "AUNP",
+      measure == "mbrier" ~ "Multiclass Brier Score"
+    )
+  ) |>
+  ggplot(aes(x = learner_name, y = value, fill = learner_name)) +
+    facet_wrap(vars(measure), ncol = 2, scales = "free") +
+    geom_boxplot(alpha = .5) +
+    geom_point(position = position_jitterdodge(dodge.width = .25)) +
+    scale_y_continuous(labels = scales::percent) +
+    #scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+    #coord_cartesian(ylim = c(0, 1)) +
+    #coord_flip() +
+    scale_fill_manual(values = learner_cols, guide = "none") +
+    labs(
+      title = "Multiclass Classification: Aggregated scores over all tasks",
+      x = NULL, y = "Score"
+    ) +
+    theme_minimal(base_size = 14)
 ```
+
+#### Table
+
+```{r multiclass-aggregated-table}
+# column: screen-inset-shaded
+aggr_multiclass_long |>
+  group_by(learner_name, measure) |>
+  summarize(
+    mean = mean(value),
+    median = median(value),
+    sd = sd(value),
+    q25 = quantile(value, .25),
+    q75 = quantile(value, .75),
+    .groups = "drop"
+  ) |>
+  mutate(across(where(is.numeric), \(x) round(100 * x, 1))) |>
+  mutate(
+    mean = glue::glue("{mean} [{sd}]"),
+    median = glue::glue("{median} [{q25}; {q75}]")
+  ) |>
+  select(-sd, -q25, -q75) |>
+  tidyr::pivot_wider(names_from = measure, names_sep = "_", values_from = mean:median) |>
+  select(learner_name, ends_with("aunp"), ends_with("brier")) |>
+  kbl(
+    col.names = c("Learner", rep(c("Mean [SD]", "Median [q25; q75]"), 2)),
+    booktabs = TRUE
+  ) |>
+  kable_styling(full_width = TRUE, latex_options = c("HOLD_position")) |>
+  add_header_above(header = c(" " = 1, "AUNP (%)" = 2, "Multiclass Brier Score (%)" = 2)) |>
+  column_spec(1, "4cm") |>
+  column_spec(2, "2.3cm") |>
+  column_spec(3, "3cm") |>
+  column_spec(4, "2.3cm") |>
+  column_spec(5, "3cm")
+```
+
 
 ### Results per Task
 
-```{r multiclass-per-task}
+```{r multiclass-per-task-auc}
 #| fig-width: 12
 #| fig-height: 7
 #| fig-align: center
@@ -221,9 +381,14 @@ ggplot(scores_multiclass, aes(x = learner_name, y = classif.mauc_aunp, fill = le
     x = "Learner", y = "AUC (%)"
   ) +
   theme_minimal()
+```
 
-# ggsave("plots/multiclass-pertask-auc.png", width = 12, height = 7, bg = "white")
-# ggsave("plots/multiclass-pertask-auc.pdf", width = 12, height = 7)
+
+```{r multiclass-per-task-auc-flip}
+#| fig-width: 12
+#| fig-height: 7
+#| fig-align: center
+#| column: screen-inset-shaded
 
 ggplot(scores_multiclass, aes(y = learner_name, x = classif.mauc_aunp, fill = learner_name)) +
   facet_wrap(vars(task_name), scales = "free_x") +
@@ -240,9 +405,14 @@ ggplot(scores_multiclass, aes(y = learner_name, x = classif.mauc_aunp, fill = le
   theme(
     panel.spacing.x = unit(1, "cm")
   )
+```
 
-# ggsave("plots/multiclass-pertask-auc-flip.png", width = 12, height = 7, bg = "white")
-# ggsave("plots/multiclass-pertask-auc-flip.pdf", width = 12, height = 7)
+
+```{r multiclass-per-task-brier}
+#| fig-width: 12
+#| fig-height: 7
+#| fig-align: center
+#| column: screen-inset-shaded
 
 ggplot(scores_multiclass, aes(y = learner_name, x = classif.mbrier, fill = learner_name)) +
   facet_wrap(vars(task_name), scales = "free") +
@@ -259,9 +429,5 @@ ggplot(scores_multiclass, aes(y = learner_name, x = classif.mbrier, fill = learn
   theme(
     panel.spacing.x = unit(1, "cm")
   )
-
-# ggsave("plots/multiclass-pertask-brier-flip.png", width = 12, height = 7, bg = "white")
-# ggsave("plots/multiclass-pertask-brier-flip.pdf", width = 12, height = 7)
-
 ```
 
