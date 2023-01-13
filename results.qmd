@@ -37,16 +37,80 @@ library(data.table)
 library(dplyr)
 library(kableExtra)
 
-# benchmark results
-bmr_binary <- readRDS("data/bmr-binary.rds")
-bmr_multiclass <- readRDS("data/bmr-multiclass.rds")
+# measures for evaluation
+msr_binary <- msrs(c("classif.auc", "classif.bbrier"))
+msr_multiclass <- msrs(c("classif.mauc_aunp", "classif.mbrier"))
 
 # Load task metadata
 task_summary <- as.data.table(readRDS("task_summary.rds"))
 
-# measures for evaluation
-msr_binary <- msrs(c("classif.auc", "classif.bbrier"))
-msr_multiclass <- msrs(c("classif.mauc_aunp", "classif.mbrier"))
+# benchmark results + cleanup
+bmr_binary <- readRDS("data/bmr-binary-auc.rds")
+bmr_multiclass <- readRDS("data/bmr-multiclass-auc.rds")
+
+cleanup_bmr <- function(bmr, eval_measures, task_summary) {
+  # Evaluate overall
+  aggr <- bmr$aggregate(measures = eval_measures)
+  # rename learners for convenience
+  aggr[, learner_name := gsub("\\.tuned", "", gsub("(encode\\.)?classif\\.", "", learner_id))]
+  
+  # long version for plotting over multiple measures
+  aggr_long <- melt(aggr, measure.vars = mlr3misc::ids(eval_measures), variable.name = "measure")
+  aggr_long[, measure := gsub("^classif\\.", "", measure)]
+  
+  # evaluate all resampling folds, cleanup names etc
+  scores <- bmr$score(measures = eval_measures)
+  scores[, learner_name := gsub("\\.tuned", "", gsub("(encode\\.)?classif\\.", "", learner_id))]
+  # Remove unneeded columns
+  scores[, c("task", "learner", "resampling", "resampling_id") := NULL]
+  # Join task metadata
+  scores <- scores[task_summary[, -c("task_id")], on = c("task_id" = "task_name_full"), nomatch = 0]
+  
+  # Sort task_name levels by n * p from task_summary
+  scores[, task_name := factor(task_name, levels = task_summary$task_name)]
+  scores_long <- melt(scores, measure.vars = mlr3misc::ids(eval_measures), variable.name = "measure")
+  scores_long[, measure := gsub("^classif\\.", "", measure)]
+
+  list(aggr = aggr, aggr_long = aggr_long, scores = scores, scores_long = scores_long)
+}
+
+tmp1 <- cleanup_bmr(bmr_binary, msr_binary, task_summary)
+
+aggr_binary <- tmp1$aggr
+aggr_binary_long <- tmp1$aggr_long
+scores_binary <- tmp1$scores
+scores_binary_long <- tmp1$scores_long
+
+tmp2 <- cleanup_bmr(bmr_multiclass, msr_multiclass, task_summary)
+
+aggr_multiclass <- tmp2$aggr
+aggr_multiclass_long <- tmp2$aggr_long
+scores_multiclass <- tmp2$scores
+scores_multiclass_long <- tmp2$scores_long
+
+rm(tmp1, tmp2)
+
+# Tuning results cleanup 
+cleanup_tuning_results <- function(results, task_summary) {
+  results <- copy(results)
+  
+  # merge with task summary for task metadata/names
+  results <- results[task_summary[, -c("task_id")], on = c("task_id" = "task_name_full"), nomatch = 0]
+  
+  # Cleanup learner names
+  results[, learner_name := gsub("\\.tuned", "", gsub("(encode\\.)?classif\\.", "", learner_id))]
+  
+  # Reconstruct max_interaction from _ratio, using p from task_summary
+  # taking into account the max_interaction_limit of 20
+  results[, max_interaction := ifelse(learner_id == "classif.rpf_fixmax.tuned", 2, pmax(ceiling(max_interaction_ratio * pmin(p, 30)), 1))]
+  
+  results[, task_name := factor(task_name, levels = task_summary$task_name)]
+  
+  results[]
+}
+
+tuning_results_rpf_binary_auc <- cleanup_tuning_results(readRDS("data/tuning_results_rpf-binary-auc.rds"), task_summary = task_summary)
+tuning_results_rpf_multiclass_auc <- cleanup_tuning_results(readRDS("data/tuning_results_rpf-multiclass-auc.rds"), task_summary = task_summary)
 
 # Define learner colors for somewhat identifiable plots
 learner_cols <- c(
@@ -67,23 +131,6 @@ set.seed(3) # Only for jitterdodge consistency
 - Evaluation on:
     -  [AUC](https://mlr3.mlr-org.com/reference/mlr_measures_classif.auc.html)
     -  [Binary Brier](https://mlr3.mlr-org.com/reference/mlr_measures_classif.bbrier.html)
-
-```{r prep-binary}
-aggr_binary <- bmr_binary$aggregate(measures = msr_binary)
-aggr_binary[, learner_name := gsub("\\.tuned", "", gsub("(encode\\.)?classif\\.", "", learner_id))]
-
-aggr_binary_long <- melt(aggr_binary, measure.vars = c("classif.auc", "classif.bbrier"), variable.name = "measure")
-aggr_binary_long[, measure := gsub("^classif\\.", "", measure)]
-
-scores_binary <- bmr_binary$score(measures = msr_binary)
-scores_binary[, learner_name := gsub("\\.tuned", "", gsub("(encode\\.)?classif\\.", "", learner_id))]
-scores_binary[, c("task", "learner", "resampling", "prediction", "resampling_id") := NULL]
-scores_binary <- scores_binary[task_summary[, -c("task_id")], on = c("task_id" = "task_name_full"), nomatch = 0]
-
-# Sort task_name levels by n * p from task_summary
-scores_binary[, task_name := factor(task_name, levels = task_summary$task_name)]
-scores_binary_long <- melt(scores_binary, measure.vars = c("classif.auc", "classif.bbrier"), variable.name = "measure")
-```
 
 ### Tasks
 
@@ -246,6 +293,100 @@ ggplot(scores_binary, aes(y = learner_name, x = classif.bbrier, fill = learner_n
   )
 ```
 
+### Tuning Results
+
+Showing best performing parameter combinations of the inner folds, e.g. the parameters that "won".
+One plot per hyperparameter, with performance on y-axis.
+
+Note that `max_interaction` is tuned by tuning `max_interaction_ratio` within [0, 1] and then calculating
+
+$$min(max(\mathrm{max\_interaction\_ratio} \cdot p), 30)$$
+to effectively tune `max_interaction` within 1 and $p$ or 30, whichever is lower. 
+This is not ideal since multiple values for `max_interaction_ratio` could result in the same value for `max_interaction` for large $p$, but it's a compromise.
+
+```{r binary-tuning-resutls-auc}
+#| fig-width: 12
+#| fig-height: 7
+#| fig-align: center
+#| column: screen-inset-shaded
+
+tuning_results_rpf_binary_auc |>
+  ggplot(aes(x = splits, y = classif.auc, color = learner_name)) +
+  facet_wrap(vars(task_name)) +
+  geom_point(size = 2, alpha = .75) +
+  scale_color_brewer(palette = "Dark2") +
+  labs(
+    title = "Binary classifification tuning results",
+    subtitle = "Tuned on AUC"
+  ) +
+  theme_minimal() +
+  theme(
+    panel.spacing.x = unit(1, "cm"),
+    legend.position = "bottom"
+  )
+
+tuning_results_rpf_binary_auc |>
+  mutate(task_name = glue::glue("{task_name} (p={p})")) |>
+  ggplot(aes(x = max_interaction, y = classif.auc, color = learner_name)) +
+  facet_wrap(vars(task_name)) +
+  geom_point(size = 2, alpha = .75) +
+  scale_color_brewer(palette = "Dark2") +
+  labs(
+    title = "Binary classifification tuning results",
+    subtitle = "Tuned on AUC"
+  ) +
+  theme_minimal() +
+  theme(
+    panel.spacing.x = unit(1, "cm"),
+    legend.position = "bottom"
+  )
+
+tuning_results_rpf_binary_auc |>
+  ggplot(aes(x = loss, y = classif.auc, color = learner_name)) +
+  facet_wrap(vars(task_name)) +
+  geom_point(size = 2, alpha = .75) +
+  scale_color_brewer(palette = "Dark2") +
+  labs(
+    title = "Binary classifification tuning results",
+    subtitle = "Tuned on AUC"
+  ) +
+  theme_minimal() +
+  theme(
+    panel.spacing.x = unit(1, "cm"),
+    legend.position = "bottom"
+  )
+
+tuning_results_rpf_binary_auc |>
+  ggplot(aes(x = split_try, y = classif.auc, color = learner_name)) +
+  facet_wrap(vars(task_name)) +
+  geom_point(size = 2, alpha = .75) +
+  scale_color_brewer(palette = "Dark2") +
+  labs(
+    title = "Binary classifification tuning results",
+    subtitle = "Tuned on AUC"
+  ) +
+  theme_minimal() +
+  theme(
+    panel.spacing.x = unit(1, "cm"),
+    legend.position = "bottom"
+  )
+
+tuning_results_rpf_binary_auc |>
+  ggplot(aes(x = t_try, y = classif.auc, color = learner_name)) +
+  facet_wrap(vars(task_name)) +
+  geom_point(size = 2, alpha = .75) +
+  scale_color_brewer(palette = "Dark2") +
+  labs(
+    title = "Binary classifification tuning results",
+    subtitle = "Tuned on AUC"
+  ) +
+  theme_minimal() +
+  theme(
+    panel.spacing.x = unit(1, "cm"),
+    legend.position = "bottom"
+  )
+```
+
 
 ## Multiclass Classification
 
@@ -253,23 +394,6 @@ ggplot(scores_binary, aes(y = learner_name, x = classif.bbrier, fill = learner_n
 - Evaluation on:
     -  [AUNP](https://mlr3.mlr-org.com/reference/mlr_measures_classif.mauc_aunp.html)
     -  [Multiclass Brier](https://mlr3.mlr-org.com/reference/mlr_measures_classif.mbrier.html)
-
-```{r prep-multiclass}
-aggr_multiclass <- bmr_multiclass$aggregate(measures = msr_multiclass)
-aggr_multiclass[, learner_name := gsub("\\.tuned", "", gsub("(encode\\.)?classif\\.", "", learner_id))]
-
-aggr_multiclass_long <- melt(aggr_multiclass, measure.vars = c("classif.mauc_aunp", "classif.mbrier"), variable.name = "measure")
-aggr_multiclass_long[, measure := gsub("^classif\\.", "", measure)]
-
-scores_multiclass <- bmr_multiclass$score(measures = msrs(c("classif.mauc_aunp", "classif.mbrier")))
-scores_multiclass[, learner_name := gsub("\\.tuned", "", gsub("(encode\\.)?classif\\.", "", learner_id))]
-scores_multiclass[, c("task", "learner", "resampling", "prediction", "resampling_id") := NULL]
-scores_multiclass <- scores_multiclass[task_summary[, -c("task_id")], on = c("task_id" = "task_name_full"), nomatch = 0]
-
-# Sort task_name levels by n * p from task_summary
-scores_multiclass[, task_name := factor(task_name, levels = task_summary$task_name)]
-scores_multiclass_long <- melt(scores_multiclass, measure.vars = c("classif.mauc_aunp", "classif.mbrier"), variable.name = "measure")
-```
 
 ### Tasks
 
@@ -431,3 +555,96 @@ ggplot(scores_multiclass, aes(y = learner_name, x = classif.mbrier, fill = learn
   )
 ```
 
+### Tuning Results
+
+Showing best performing parameter combinations of the inner folds, e.g. the parameters that "won".
+One plot per hyperparameter, with performance on y-axis.
+
+Note that `max_interaction` is tuned by tuning `max_interaction_ratio` within [0, 1] and then calculating
+
+$$min(max(\mathrm{max\_interaction\_ratio} \cdot p), 30)$$
+to effectively tune `max_interaction` within 1 and $p$ or 30, whichever is lower. 
+This is not ideal since multiple values for `max_interaction_ratio` could result in the same value for `max_interaction` for large $p$, but it's a compromise.
+
+```{r multiclass-tuning-resutls-auc}
+#| fig-width: 12
+#| fig-height: 7
+#| fig-align: center
+#| column: screen-inset-shaded
+
+tuning_results_rpf_multiclass_auc |>
+  ggplot(aes(x = splits, y = classif.mauc_aunp, color = learner_name)) +
+  facet_wrap(vars(task_name)) +
+  geom_point(size = 2, alpha = .75) +
+  scale_color_brewer(palette = "Dark2") +
+  labs(
+    title = "Binary classifification tuning results",
+    subtitle = "Tuned on AUC"
+  ) +
+  theme_minimal() +
+  theme(
+    panel.spacing.x = unit(1, "cm"),
+    legend.position = "bottom"
+  )
+
+tuning_results_rpf_multiclass_auc |>
+  mutate(task_name = glue::glue("{task_name} (p={p})")) |>
+  ggplot(aes(x = max_interaction, y = classif.mauc_aunp, color = learner_name)) +
+  facet_wrap(vars(task_name)) +
+  geom_point(size = 2, alpha = .75) +
+  scale_color_brewer(palette = "Dark2") +
+  labs(
+    title = "Binary classifification tuning results",
+    subtitle = "Tuned on AUC"
+  ) +
+  theme_minimal() +
+  theme(
+    panel.spacing.x = unit(1, "cm"),
+    legend.position = "bottom"
+  )
+
+tuning_results_rpf_multiclass_auc |>
+  ggplot(aes(x = loss, y = classif.mauc_aunp, color = learner_name)) +
+  facet_wrap(vars(task_name)) +
+  geom_point(size = 2, alpha = .75) +
+  scale_color_brewer(palette = "Dark2") +
+  labs(
+    title = "Binary classifification tuning results",
+    subtitle = "Tuned on AUC"
+  ) +
+  theme_minimal() +
+  theme(
+    panel.spacing.x = unit(1, "cm"),
+    legend.position = "bottom"
+  )
+
+tuning_results_rpf_multiclass_auc |>
+  ggplot(aes(x = split_try, y = classif.mauc_aunp, color = learner_name)) +
+  facet_wrap(vars(task_name)) +
+  geom_point(size = 2, alpha = .75) +
+  scale_color_brewer(palette = "Dark2") +
+  labs(
+    title = "Binary classifification tuning results",
+    subtitle = "Tuned on AUC"
+  ) +
+  theme_minimal() +
+  theme(
+    panel.spacing.x = unit(1, "cm"),
+    legend.position = "bottom"
+  )
+
+tuning_results_rpf_multiclass_auc |>
+  ggplot(aes(x = t_try, y = classif.mauc_aunp, color = learner_name)) +
+  facet_wrap(vars(task_name)) +
+  geom_point(size = 2, alpha = .75) +
+  scale_color_brewer(palette = "Dark2") +
+  labs(
+    title = "Binary classifification tuning results",
+    subtitle = "Tuned on AUC"
+  ) +
+  theme_minimal() +
+  theme(
+    panel.spacing.x = unit(1, "cm"),
+    legend.position = "bottom"
+  )
+```
