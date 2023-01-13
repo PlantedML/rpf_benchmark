@@ -25,12 +25,8 @@ if (FALSE) {
 }
 
 # Settings
-resample_outer <- rsmp("cv", folds = 10)
-resample_inner <- rsmp("cv", folds = 5)
+source(here::here("settings.R"))
 mymsr <- msr("classif.mauc_aunp")
-# mytrm <- trm("evals", n_evals = 50) # Trial mode
-mytrm <- trm("evals", n_evals = 200)  # Serious mode
-mytnr <- tnr("random_search")
 
 auto_tune <- function(learner, .encode = FALSE, ...) {
   search_space <- ps(...)
@@ -92,14 +88,14 @@ tuned_rpf <- auto_tune(
   learner = lrn("classif.rpf", predict_type = "prob",
                 id = "classif.rpf",
                 # Fixed to 50 for performance
-                ntrees = 50,
+                ntrees = rpf.ntrees,
                 # Ensure upper bound as per Joseph
-                max_interaction_limit = 30),
-  loss = p_fct(c("L1", "exponential")), # removed logit for now
-  splits = p_int(10, 50), # Bumped to lower = 10 as per Munir
-  split_try = p_int(1, 20),
-  t_try = p_dbl(0.1, 1),
-  max_interaction_ratio = p_dbl(0, 1)
+                max_interaction_limit = rpf.maxintlim),
+  loss = rpf.loss,
+  splits = rpf.splits,
+  split_try = rpf.split_try,
+  t_try = rpf.t_try,
+  max_interaction_ratio = rpf.maxintratio
 )
 
 # Fixed max_interaction as suggested by Munir
@@ -108,12 +104,12 @@ tuned_rpf <- auto_tune(
 tuned_rpf_fixmax <- auto_tune(
   learner = lrn("classif.rpf", predict_type = "prob",
                 id = "classif.rpf_fixmax",
-                ntrees = 50,
+                ntrees = rpf.ntrees,
                 max_interaction = 2),
-  loss = p_fct(c("L1", "exponential")), # removed logit for now
-  splits = p_int(10, 50),
-  split_try = p_int(1, 20),
-  t_try = p_dbl(0.1, 1)
+  loss = rpf.loss,
+  splits = rpf.splits,
+  split_try = rpf.split_try,
+  t_try = rpf.t_try,
 )
 
 # Benchmark design
@@ -128,24 +124,22 @@ learners <- list(
 design <- benchmark_grid(
   tasks = tasks_multiclass, # Loaded in get_oml_tasks.R
   learners = learners,
-  resamplings = list(resample_outer)
+  resamplings = list(rsmp("cv", folds = outer_folds))
 )
 
 
 # Registry setup ----------------------------------------------------------
 
-reg_name <- "rpf_batchmark_multiclass"
+reg_name <- "rpf_batchmark_multiclass_auc"
 reg_dir <- here::here("registry", reg_name)
 # Comment this line to prevent stored registry deletion on accident
 # unlink(reg_dir, recursive = TRUE)
 
-# "registry" holds the registries, must be ensured to exist
-if (!dir.exists("registry")) dir.create("registry")
 
 if (dir.exists(reg_dir)) { # if current registry exists, we continue on
   loadRegistry(reg_dir, writeable = TRUE)
 } else { # If registry doesn't exist yet: make registry and batchmark
-  reg <- makeExperimentRegistry(reg_dir, seed = 230749)
+  reg <- makeExperimentRegistry(reg_dir, seed = global_seed)
   # Ensure store_models = TRUE to access to tuning archives
   batchmark(design, reg = reg, store_models = TRUE)
 }

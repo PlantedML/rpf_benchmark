@@ -25,14 +25,10 @@ if (FALSE) {
 }
 
 # Settings
-resample_outer <- rsmp("cv", folds = 10)
-resample_inner <- rsmp("cv", folds = 5)
+source(here::here("settings.R"))
 mymsr <- msr("classif.auc")
-# mytrm <- trm("evals", n_evals = 50) # Trial mode
-mytrm <- trm("evals", n_evals = 200)  # Serious mode
-mytnr <- tnr("random_search")
 
-auto_tune <- function(learner, .encode = FALSE, ...) {
+auto_tune <- function(learner, .encode = FALSE, .tune_measure, ...) {
   search_space <- ps(...)
 
   if (.encode) {
@@ -42,11 +38,11 @@ auto_tune <- function(learner, .encode = FALSE, ...) {
   }
   AutoTuner$new(
     learner = learner,
-    resampling = resample_inner,
-    measure = mymsr,
+    resampling = rsmp("cv", folds = inner_folds),
+    measure = .tune_measure,
     search_space = search_space,
-    terminator = mytrm,
-    tuner = mytnr
+    terminator = trm("evals", n_evals = tuning_budget),
+    tuner = tnr("random_search")
   )
 }
 
@@ -92,14 +88,14 @@ tuned_rpf <- auto_tune(
   learner = lrn("classif.rpf", predict_type = "prob",
                 id = "classif.rpf",
                 # Fixed to 50 for performance
-                ntrees = 50,
+                ntrees = rpf.ntrees,
                 # Ensure upper bound as per Joseph
-                max_interaction_limit = 30),
-  loss = p_fct(c("L1", "exponential")), # removed logit for now
-  splits = p_int(10, 50), # Bumped to lower = 10 as per Munir
-  split_try = p_int(1, 20),
-  t_try = p_dbl(0.1, 1),
-  max_interaction_ratio = p_dbl(0, 1)
+                max_interaction_limit = rpf.maxintlim),
+  loss = rpf.loss,
+  splits = rpf.splits,
+  split_try = rpf.split_try,
+  t_try = rpf.t_try,
+  max_interaction_ratio = rpf.maxintratio
 )
 
 # Fixed max_interaction as suggested by Munir
@@ -108,12 +104,12 @@ tuned_rpf <- auto_tune(
 tuned_rpf_fixmax <- auto_tune(
   learner = lrn("classif.rpf", predict_type = "prob",
                 id = "classif.rpf_fixmax",
-                ntrees = 50,
+                ntrees = rpf.ntrees,
                 max_interaction = 2),
-  loss = p_fct(c("L1", "exponential")), # removed logit for now
-  splits = p_int(10, 50),
-  split_try = p_int(1, 20),
-  t_try = p_dbl(0.1, 1)
+  loss = rpf.loss,
+  splits = rpf.splits,
+  split_try = rpf.split_try,
+  t_try = rpf.t_try,
 )
 
 # Benchmark design
@@ -128,7 +124,7 @@ learners <- list(
 design <- benchmark_grid(
   tasks = tasks, # Loaded in get_oml_tasks.R
   learners = learners,
-  resamplings = list(resample_outer)
+  resamplings = list(rsmp("cv", folds = outer_folds))
 )
 
 
@@ -139,16 +135,13 @@ reg_dir <- here::here("registry", reg_name)
 # Comment this line to prevent stored registry deletion on accident
 # unlink(reg_dir, recursive = TRUE)
 
-# "registry" holds the registries, must be ensured to exist
-if (!dir.exists("registry")) dir.create("registry")
-
 if (dir.exists(reg_dir)) { # if current registry exists, we continue on
 
   loadRegistry(reg_dir, writeable = TRUE)
 
 } else { # If registry doesn't exist yet: make registry and batchmark
 
-  reg <- makeExperimentRegistry(reg_dir, seed = 230749)
+  reg <- makeExperimentRegistry(reg_dir, seed = global_seed)
 
   # Ensure store_models = TRUE to access to tuning archives
   batchmark(design, reg = reg, store_models = TRUE)
@@ -193,17 +186,6 @@ if (grepl("node\\d{2}|bipscluster", system("hostname", intern = TRUE))) {
              resources = list(name = reg_name, chunks.as.arrayjobs = TRUE,
                               ncpus = 1, memory = 6000, walltime = 10*24*3600,
                               max.concurrent.jobs = 400))
-# } else if (grepl("glogin\\d+", system("hostname", intern = TRUE))) {
-#   ids <- findErrors()
-#   ids[, chunk := chunk(job.id, chunk.size = 10)]
-#   submitJobs(ids = ids, # walltime in seconds, 10 days max, memory in MB
-#              resources = list(name = reg_name, chunks.as.arrayjobs = FALSE,
-#                               partition = "large40", ntasks = 10, # ntaskspernode depends on partition
-#                               max.concurrent.jobs = 8000,
-#                               #partition = "large40:shared",
-#                               # medium40:test - 1h walltime
-#                               # medium40 - 48h walltime
-#                               ncpus = 1, walltime = 3600*48))
 } else {
   # small tasks first
   submitJobs(findNotSubmitted(jobs_small_task_ids))
