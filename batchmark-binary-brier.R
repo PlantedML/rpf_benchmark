@@ -38,11 +38,11 @@ auto_tune <- function(learner, .encode = FALSE, ...) {
   }
   AutoTuner$new(
     learner = learner,
-    resampling = resample_inner,
+    resampling = rsmp("cv", folds = inner_folds),
     measure = mymsr,
     search_space = search_space,
-    terminator = mytrm,
-    tuner = mytnr
+    terminator = trm("evals", n_evals = tuning_budget),
+    tuner = tnr("random_search")
   )
 }
 
