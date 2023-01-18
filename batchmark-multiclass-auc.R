@@ -148,20 +148,11 @@ if (dir.exists(reg_dir)) { # if current registry exists, we continue on
 as.data.frame(table(unwrap(getJobPars())[["learner_id"]]))
 
 # Job subselection --------------------------------------------------------
-
 ids_rpf <- findExperiments(algo.pars = learner_id == "classif.rpf.tuned")
 ids_rpf_fixmax <- findExperiments(algo.pars = learner_id == "classif.rpf_fixmax.tuned")
 ids_xgb <- findExperiments(algo.pars = learner_id == "encode.classif.xgboost.tuned")
 ids_xgb_fixdepth <- findExperiments(algo.pars = learner_id == "encode.classif.xgboost_fixdepth.tuned")
 ids_ranger <- findExperiments(algo.pars = learner_id == "classif.ranger.tuned")
-
-# Get full overview of tasks and select multiclass with n*p <= 100.000
-task_summary <- readRDS("task_summary.rds")
-small_tasks <- subset(task_summary, dim <= 1e5 & !twoclass)
-
-# Job IDs for small tasks
-jobs_small_task_ids <- findExperiments(prob.pars = task_id %in% small_tasks$task_name_full)
-small_jobs_rpf <- ijoin(jobs_small_task_ids, rbind(ids_rpf, ids_rpf_fixmax))
 
 # Submit ------------------------------------------------------------------
 
@@ -174,10 +165,11 @@ if (grepl("node\\d{2}|bipscluster", system("hostname", intern = TRUE))) {
                               ncpus = 1, memory = 6000, walltime = 10*24*3600,
                               max.concurrent.jobs = 400))
 } else {
-  # small tasks rpf first
-  submitJobs(findNotSubmitted(small_jobs_rpf))
+  # first rpf, the rest
+  submitJobs(ids_rpf)
+  submitJobs(ids_rpf_fixmax)
   # then everything else that's not done already
-  submitJobs(findNotDone(jobs_small_task_ids))
+  submitJobs(findNotDone())
 }
 
 waitForJobs()

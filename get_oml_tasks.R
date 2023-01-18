@@ -5,6 +5,8 @@ library(mlr3oml)
 # Cache datasets
 options("mlr3oml.cache" = TRUE) # requires install.packages('qs')
 
+source(here::here("settings.R"))
+
 # Get CC18 tasks
 task_ids <- getOMLStudy('OpenML-CC18')$tasks$task.id
 
@@ -49,13 +51,13 @@ saveRDS(task_info, "task_summary.rds")
 
 # Sub-selections for binary and multiclass benchmarks -----
 
-# Rough heuristic: n * p smaller than 7e5, since 723376 for "bank-marketing" is already v slow
-task_info_binary <- subset(task_info, dim <= 7e5 & twoclass)
+# Rough heuristic: n * p smaller than 1e5, since 723376 for "bank-marketing" is already v slow
+task_info_binary <- subset(task_info, dim <= task_dim_max & twoclass)
 task_ids_binary <- task_info_binary[["task_id"]]
 
-task_info_multiclass <- subset(task_info, dim <= 1e5 & !twoclass)
+task_info_multiclass <- subset(task_info, dim <= task_dim_max & !twoclass)
 task_ids_multiclass <- task_info_multiclass[["task_id"]]
 
 # This object is what counts, as it is used in batchmark.R
-tasks <- lapply(task_ids_binary, tsk, .key = "oml")
+tasks_binary <- lapply(task_ids_binary, tsk, .key = "oml")
 tasks_multiclass <- lapply(task_ids_multiclass, tsk, .key = "oml")

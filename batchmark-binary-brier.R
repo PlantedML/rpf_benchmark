@@ -122,7 +122,7 @@ learners <- list(
 )
 
 design <- benchmark_grid(
-  tasks = tasks, # Loaded in get_oml_tasks.R
+  tasks = tasks_binary, # Loaded in get_oml_tasks.R
   learners = learners,
   resamplings = list(rsmp("cv", folds = outer_folds))
 )
@@ -151,30 +151,11 @@ if (dir.exists(reg_dir)) { # if current registry exists, we continue on
 as.data.frame(table(unwrap(getJobPars())[["learner_id"]]))
 
 # Job subselection --------------------------------------------------------
-
 ids_rpf <- findExperiments(algo.pars = learner_id == "classif.rpf.tuned")
 ids_rpf_fixmax <- findExperiments(algo.pars = learner_id == "classif.rpf_fixmax.tuned")
 ids_xgb <- findExperiments(algo.pars = learner_id == "encode.classif.xgboost.tuned")
 ids_xgb_fixdepth <- findExperiments(algo.pars = learner_id == "encode.classif.xgboost_fixdepth.tuned")
 ids_ranger <- findExperiments(algo.pars = learner_id == "classif.ranger.tuned")
-
-task_summary <- readRDS("task_summary.rds")
-
-# Tasks with n*p <= kc2, 7th smallest task
-# small_tasks <- task_summary |> subset(dim <= 10962)
-small_tasks <- task_summary |> subset(dim <= 1e5)
-
-# should have kept original task names in task_summary...
-small_task_ids <- sapply(seq_len(nrow(small_tasks)), function(x) {
-  sprintf("Task %d: %s (Supervised Classification)", small_tasks[x, "task_id"], small_tasks[x, "task_name"])
-})
-
-# Jobs for small tasks
-jobs_small_task_ids <- findExperiments(prob.pars = task_id %in% small_task_ids)
-
-# ijoin with rpf/rpf_fixmax jobs
-small_jobs_rpf <- ijoin(jobs_small_task_ids, rbind(ids_rpf, ids_rpf_fixmax))
-
 
 # Submit ------------------------------------------------------------------
 
@@ -187,31 +168,11 @@ if (grepl("node\\d{2}|bipscluster", system("hostname", intern = TRUE))) {
                               ncpus = 1, memory = 6000, walltime = 10*24*3600,
                               max.concurrent.jobs = 400))
 } else {
-  # small tasks first
-  submitJobs(findNotSubmitted(jobs_small_task_ids))
+  # first rpf, the rest
+  submitJobs(ids_rpf)
+  submitJobs(ids_rpf_fixmax)
   # then everything else that's not done already
   submitJobs(findNotDone())
-}
-
-# to submit only certain algorithms/tasks:
-if (FALSE) {
-  # only rpf jobs, or only xgboost jobs
-  ids_rpf <- findExperiments(algo.pars = learner_id == "classif.rpf.tuned")
-  ids_rpf_fixmax <- findExperiments(algo.pars = learner_id == "classif.rpf_fixmax.tuned")
-  ids_xgb <- findExperiments(algo.pars = learner_id == "encode.classif.xgboost.tuned")
-  ids_xgb_fixdepth <- findExperiments(algo.pars = learner_id == "encode.classif.xgboost_fixdepth.tuned")
-  ids_ranger <- findExperiments(algo.pars = learner_id == "classif.ranger.tuned")
-
-  # only a specific task
-  ids_wilt <- findExperiments(prob.pars = task_id == "Task 146820: wilt (Supervised Classification)")
-  ids_diabetes <- findExperiments(prob.pars = task_id == "Task 37: diabetes (Supervised Classification)")
-
-  # only rpf on one task
-  ids_rpf_wilt <- ijoin(ids_wilt, ids_rpf)
-  # ids_rpf_diabetes <- ijoin(ids_diabetes, ids_rpf)
-  submitJobs(ids = ids_rpf_wilt)
-
-  # See unwrap(getJobPars()) for all task_ids and learner_ids
 }
 
 waitForJobs()
