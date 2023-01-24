@@ -168,7 +168,7 @@ if (grepl("node\\d{2}|bipscluster", system("hostname", intern = TRUE))) {
   submitJobs(ids_rpf)
   submitJobs(ids_rpf_fixmax)
   # then everything else that's not done already
-  submitJobs(findNotDone())
+  submitJobs(findNotStarted())
 }
 
 waitForJobs()
