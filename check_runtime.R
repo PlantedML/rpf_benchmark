@@ -2,7 +2,7 @@
 library(batchtools)
 library(ggplot2)
 
-reg_name <- "rpf_batchmark"
+reg_name <- "rpf_batchmark_binary_auc"
 reg_dir <- here::here("registry", reg_name)
 loadRegistry(reg_dir, writeable = FALSE)
 
@@ -99,30 +99,4 @@ job_median_wide[, rpf_xgb := rpf/xgboost]
 job_median_wide[, rpf_ranger := rpf/ranger]
 job_median_wide[, xgb_ranger := xgboost/ranger]
 
-# Predict stuff? ----------------------------------------------------------
-
-jobs <- jobs[learner_id %in% c("rpf", "rpf_fixmax")]
-jobs_done <- jobs[!is.na(time_days)]
-jobs_todo <- jobs[is.na(time_days)]
-
-mod <- lm(log10(time_days) ~ learner_id + n * p, data = jobs_done)
-jobs$predicted_time <- 10^(predict(mod, jobs))
-
-jobs |>
-  data.table::melt(id = c("task_id", "learner_id", "dim"), measure = c("time_days", "predicted_time"), variable.name = "type") |>
-  ggplot(aes(x = reorder(task_id, dim), y = value, color = type, fill = type, shape = learner_id)) +
-  geom_point(size = 3, stroke = .5, alpha = 1/3) +
-  coord_flip() +
-  scale_y_log10() +
-  #scale_color_manual(values = learner_cols, aesthetics = c("color", "fill")) +
-  labs(
-    title = "Estimated Job Runtime (on BigBertha)",
-    subtitle = "Across rpf learners and all tasks.\nTasks are ordered by n * p, decreasing",
-    x = "Task (n x p)", y = "Runtime (days, log10 scale)",
-    color = NULL, fill = NULL, shape = "Learner"
-  ) +
-  theme_minimal(base_size = 14) +
-  theme(
-    # plot.title.position = "plot",
-    legend.position = "bottom"
-  )
+job_median_wide
