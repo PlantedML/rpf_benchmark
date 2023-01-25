@@ -148,7 +148,7 @@ if (dir.exists(reg_dir)) { # if current registry exists, we continue on
 }
 
 # Overview of learner IDs
-as.data.frame(table(unwrap(getJobPars())[["learner_id"]]))
+summarizeExperiments(by = c("learner_id"))
 
 # Job subselection --------------------------------------------------------
 ids_rpf <- findExperiments(algo.pars = learner_id == "classif.rpf.tuned")
@@ -157,22 +157,20 @@ ids_xgb <- findExperiments(algo.pars = learner_id == "encode.classif.xgboost.tun
 ids_xgb_fixdepth <- findExperiments(algo.pars = learner_id == "encode.classif.xgboost_fixdepth.tuned")
 ids_ranger <- findExperiments(algo.pars = learner_id == "classif.ranger.tuned")
 
+ids <- do.call(rbind, list(ids_rpf, ids_rpf_fixmax, ids_xgb, ids_xgb_fixdepth, ids_ranger))
+
 # Submit ------------------------------------------------------------------
 
 if (grepl("node\\d{2}|bipscluster", system("hostname", intern = TRUE))) {
   #ids <- findNotStarted()
-  ids <- small_jobs_rpf
+  ids <- jobs_small_task_ids
   ids[, chunk := chunk(job.id, chunk.size = 50)]
   submitJobs(ids = ids, # walltime in seconds, 10 days max, memory in MB
              resources = list(name = reg_name, chunks.as.arrayjobs = TRUE,
                               ncpus = 1, memory = 6000, walltime = 10*24*3600,
                               max.concurrent.jobs = 400))
 } else {
-  # first rpf, the rest
-  submitJobs(ids_rpf)
-  submitJobs(ids_rpf_fixmax)
-  # then everything else that's not done already
-  submitJobs(findNotStarted())
+  submitJobs(ids)
 }
 
 waitForJobs()
