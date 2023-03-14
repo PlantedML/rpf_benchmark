@@ -9,5 +9,7 @@ registry/
 
 data/*rds
 results.html
+results.tex
 results_files
 upload.sh
+*_bak
