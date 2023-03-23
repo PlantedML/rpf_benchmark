@@ -43,7 +43,9 @@ process_registry <- function(
 
   } else {
     reg_dir <- here::here("registry", reg_name)
-    batchtools::loadRegistry(reg_dir, writeable = TRUE)
+    cli::cli_alert_info("Loading registry at {.path {reg_dir}}")
+    suppressMessages(batchtools::loadRegistry(reg_dir, writeable = TRUE))
+    cli::cli_alert_info("Running {.fn reduceResultsBatchmark}...")
     t1 <- tictoc::tic()
     bmr <- mlr3batchmark::reduceResultsBatchmark()
     t2 <- tictoc::toc()
@@ -57,6 +59,7 @@ process_registry <- function(
     if (file.exists(tuning_archive_path)) {
       cli::cli_alert_warning("{.path {tuning_archive_path}} already exists, not overwriting.")
     } else {
+      cli::cli_alert_info("Running {.fn extract_inner_tuning_archives}")
       t1 <- tictoc::tic()
       tuning_archive <- mlr3tuning::extract_inner_tuning_archives(bmr)
       t2 <- tictoc::toc()
@@ -78,6 +81,7 @@ process_registry <- function(
     if (file.exists(tuning_results_path)) {
       cli::cli_alert_warning("{.path {tuning_results_path}} already exists, not overwriting.")
     } else {
+      cli::cli_alert_info("Running {.fn extract_inner_tuning_results}")
       t1 <- tictoc::tic()
       tuning_results <- mlr3tuning::extract_inner_tuning_results(bmr)
       t2 <- tictoc::toc()
@@ -100,7 +104,6 @@ process_registry <- function(
     cli::cli_alert_info("Saving {.code bmr} to {.path {bmr_path}}")
     saveRDS(bmr, bmr_path)
   }
-
 }
 
 process_registry("rpf_batchmark_binary_auc",       "binary",     "auc",   data_dir = "data")
