@@ -2,9 +2,7 @@ library(mlr3oml)
 requireNamespace("qs")
 options(mlr3oml.cache = TRUE)
 
-
 # Gets the OpenML-CC18 collection
-
 collection = ocl(99)
 # Get the OML tasks as intermediate objects
 omltasks = lapply(collection$task_ids, \(id) otsk(id))
@@ -12,18 +10,18 @@ omltasks = lapply(collection$task_ids, \(id) otsk(id))
 tasks = lapply(omltasks, \(learner) as_task(learner))
 names(tasks) = mlr3misc::ids(tasks)
 
-all_feature_types <- sapply(tasks, \(task) {
-  unique(task$feature_types$type)
-}) |>
-  unlist() |>
-  unique() |>
-  sort()
+# all_feature_types <- sapply(tasks, \(task) {
+#   unique(task$feature_types$type)
+# }) |>
+#   unlist() |>
+#   unique() |>
+#   sort()
 
 task_meta <- data.table::rbindlist(lapply(tasks, \(task) {
 
   x <- task$data(cols = task$feature_names)
 
-  task_meta <- data.table::data.table(
+  data.table::data.table(
     task_id = task$id,
     property = task$properties,
     n = task$nrow,
@@ -37,8 +35,6 @@ task_meta <- data.table::rbindlist(lapply(tasks, \(task) {
     n_character = sum(vapply(x, \(col) is.character(col), logical(1))),
     n_logical   = sum(vapply(x, \(col) is.logical(col),   logical(1)))
   )
-
-  task_meta
 }))
 
 
@@ -52,7 +48,7 @@ cli::cli_ul(tasks_exclude)
 
 tasks_keep_ids <- which(!names(tasks) %in% tasks_exclude)
 tasks <- tasks[tasks_keep_ids]
-
+task_meta <- task_meta[tasks_keep_ids,]
 
 cli::cli_alert_info("{.val {length(tasks)}} tasks remaining")
 task_meta[, dim_rank := rank(dim)]
@@ -64,7 +60,7 @@ task_meta[, dim_rank := rank(dim)]
 if (conf$resampling$outer$strategy == "OML") {
   cli::cli_alert_info("Using OML resamplings")
   resamplings = lapply(omltasks, \(task) as_resampling(task))
-  # Discard resamplings for tasks with missing values
+  # Discard resamplings for tasks excluded above
   resamplings <- resamplings[tasks_keep_ids]
 
 } else {
@@ -88,3 +84,4 @@ if (conf$resampling$outer$strategy == "OML") {
 }
 
 stopifnot(length(tasks) == length(resamplings))
+saveRDS(task_meta, "task_meta.rds")

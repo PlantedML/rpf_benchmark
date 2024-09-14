@@ -18,13 +18,14 @@ if (conf$tuning$tuner == "mbo") {
 }
 
 wrap_autotuner <- function(learner_id, ..., search_space, .encode = FALSE, .tuning_measure) {
-  # browser()
+  cli::cli_alert_info("Setting up {.val {learner_id}} with {.val {.tuning_measure}}")
   paradox::assert_param_set(search_space)
 
   base_learner <- lrn(learner_id, predict_type = "prob", ...)
 
   if (.encode) {
-    base_learner <- po("encode", method = "treatment") %>>%
+    cli::cli_alert_info("Adding encoding pipeline")
+    base_learner <- po("encode", method = "one-hot") %>>%
       po("removeconstants") %>>%
       base_learner |>
       as_learner()
@@ -38,7 +39,7 @@ wrap_autotuner <- function(learner_id, ..., search_space, .encode = FALSE, .tuni
 
 
   if (conf$fallback$inner) {
-    # base_learner$encapuslation("callr", lrn("classif.featureless"))
+    # base_learner$encapsulate("callr", lrn("classif.featureless"))
     base_learner$fallback = lrn("classif.featureless", predict_type = "prob")
     base_learner$encapsulate = c(train = "callr", predict = "callr")
   }
@@ -71,7 +72,7 @@ wrap_autotuner <- function(learner_id, ..., search_space, .encode = FALSE, .tuni
   )
 
   if (conf$fallback$outer) {
-    # at$encapuslation("callr", lrn("classif.featureless"))
+    # at$encapsulate("callr", lrn("classif.featureless"))
     at$fallback = lrn("classif.featureless", predict_type = "prob")
     at$encapsulate = c(train = "callr", predict = "callr")
   }
