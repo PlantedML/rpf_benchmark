@@ -18,7 +18,7 @@ if (conf$tuning$tuner == "mbo") {
 }
 
 wrap_autotuner <- function(learner_id, ..., search_space, .encode = FALSE, .tuning_measure) {
-  cli::cli_alert_info("Setting up {.val {learner_id}} with {.val {.tuning_measure}}")
+  cli::cli_alert_info("Setting up {.val {learner_id}} with {.val {(.tuning_measure)}}")
   paradox::assert_param_set(search_space)
 
   base_learner <- lrn(learner_id, predict_type = "prob", ...)

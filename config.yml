@@ -40,4 +40,7 @@ trial:
   reg_name: "trial"
   tuning:
     # budget = evals + n_params * multiplier
-    evals: 10
+    evals: 2
+  fallback:
+    inner: false
+    outer: false
