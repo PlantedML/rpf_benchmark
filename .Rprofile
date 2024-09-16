@@ -1,3 +1,6 @@
+source("renv/activate.R")
+# Circumvent srcref issue https://github.com/rstudio/renv/issues/1713
+options("install.opts" = "--without-keep.source")
 
 config_profile = Sys.getenv('R_CONFIG_ACTIVE', 'default')
 cli::cli_alert_info("Loading config {.val {config_profile}}")
