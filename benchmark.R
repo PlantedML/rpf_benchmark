@@ -74,6 +74,6 @@ data.table::setkey(tab, job.id)
 
 sample_ids = tab[dim_rank <= 10][, .SD[sample(nrow(.SD), 1)],
                  by = c("task_id", "learner_id", "tags")]
-sample_ids[, .(n = .N), by = .(task_id, learner_id, tags)]
+sample_ids[, .N, by = .(task_id, learner_id, tags)]
 
 submitJobs(sample_ids)
