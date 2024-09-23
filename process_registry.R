@@ -45,7 +45,9 @@ process_registry <- function(
     reg_dir <- here::here("registry", reg_name)
     batchtools::loadRegistry(reg_dir, writeable = TRUE)
     t1 <- tictoc::tic()
+    options(batchtools.progress = FALSE) # for speedup
     bmr <- mlr3batchmark::reduceResultsBatchmark()
+    options(batchtools.progress = TRUE)
     t2 <- tictoc::toc()
     cli::cli_alert_info("{.fn reduceResultsBatchmark}: {t2$callback_msg}")
 

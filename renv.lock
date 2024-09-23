@@ -40,7 +40,7 @@
       "Package": "MASS",
       "Version": "7.3-61",
       "Source": "Repository",
-      "Repository": "https://packagemanager.rstudio.com/all/latest",
+      "Repository": "RSPM",
       "Requirements": [
         "R",
         "grDevices",
@@ -210,17 +210,17 @@
     },
     "bit": {
       "Package": "bit",
-      "Version": "4.0.5",
+      "Version": "4.5.0",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
         "R"
       ],
-      "Hash": "d242abec29412ce988848d0294b208fd"
+      "Hash": "5dc7b2677d65d0e874fc4aaf0e879987"
     },
     "bit64": {
       "Package": "bit64",
-      "Version": "4.0.5",
+      "Version": "4.5.2",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
@@ -230,7 +230,7 @@
         "stats",
         "utils"
       ],
-      "Hash": "9fe98599ca456d6552421db0d6772d8f"
+      "Hash": "e84984bf5f12a18628d9a02322128dfd"
     },
     "brew": {
       "Package": "brew",
@@ -407,13 +407,13 @@
     },
     "curl": {
       "Package": "curl",
-      "Version": "5.2.2",
+      "Version": "5.2.3",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
         "R"
       ],
-      "Hash": "8f27335f2bcff4d6035edcc82d7d46de"
+      "Hash": "d91263322a58af798f6cf3b13fd56dde"
     },
     "data.table": {
       "Package": "data.table",
@@ -473,14 +473,13 @@
     },
     "evaluate": {
       "Package": "evaluate",
-      "Version": "0.24.0",
+      "Version": "1.0.0",
       "Source": "Repository",
-      "Repository": "RSPM",
+      "Repository": "CRAN",
       "Requirements": [
-        "R",
-        "methods"
+        "R"
       ],
-      "Hash": "a1066cbc05caee9a4bf6d90f194ff4da"
+      "Hash": "6b567375113ceb7d9f800de4dd42218e"
     },
     "fansi": {
       "Package": "fansi",
@@ -781,13 +780,13 @@
     },
     "jsonlite": {
       "Package": "jsonlite",
-      "Version": "1.8.8",
+      "Version": "1.8.9",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
         "methods"
       ],
-      "Hash": "e1b9c55281c5adc4dd113652d9e26768"
+      "Hash": "4e993b65c2c3ffbffce7bb3e2c6f832b"
     },
     "kableExtra": {
       "Package": "kableExtra",
@@ -978,9 +977,14 @@
     },
     "mlr3": {
       "Package": "mlr3",
-      "Version": "0.20.2",
-      "Source": "Repository",
-      "Repository": "CRAN",
+      "Version": "0.20.2.9000",
+      "Source": "GitHub",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteUsername": "mlr-org",
+      "RemoteRepo": "mlr3",
+      "RemoteRef": "main",
+      "RemoteSha": "d3e0755f816cdad087f58ad5f33c41d314dc20de",
       "Requirements": [
         "R",
         "R6",
@@ -999,7 +1003,7 @@
         "parallelly",
         "uuid"
       ],
-      "Hash": "2e5225a210cef7155a2899a4d16f1cf2"
+      "Hash": "4291bba9b9ed0184d476d919a7c92a35"
     },
     "mlr3batchmark": {
       "Package": "mlr3batchmark",
@@ -1052,7 +1056,13 @@
     "mlr3extralearners": {
       "Package": "mlr3extralearners",
       "Version": "0.9.0-9000",
-      "Source": "unknown",
+      "Source": "GitHub",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteUsername": "mlr-org",
+      "RemoteRepo": "mlr3extralearners",
+      "RemoteRef": "main",
+      "RemoteSha": "0297a064dda0424305a21f4b02cc27b47438f354",
       "Requirements": [
         "R",
         "R6",
@@ -1063,7 +1073,7 @@
         "mlr3misc",
         "paradox"
       ],
-      "Hash": "0f955eb09037a509a99fad2a7f129b5d"
+      "Hash": "68d73f39dcba0f8f89fba30199e8a0ea"
     },
     "mlr3filters": {
       "Package": "mlr3filters",
@@ -1073,7 +1083,6 @@
       "RemoteHost": "api.github.com",
       "RemoteRepo": "mlr3filters",
       "RemoteUsername": "mlr-org",
-      "RemoteRef": "HEAD",
       "RemoteSha": "da037e1333d41d7742a8dd5692a0ff288b15202a",
       "Requirements": [
         "R",
@@ -1169,7 +1178,6 @@
       "RemoteHost": "api.github.com",
       "RemoteRepo": "mlr3measures",
       "RemoteUsername": "mlr-org",
-      "RemoteRef": "HEAD",
       "RemoteSha": "14b3dcbd6607d2cb36563e7eeeb560b3f069d3f9",
       "Requirements": [
         "PRROC",
@@ -1267,7 +1275,6 @@
       "RemoteRepo": "mlr3tuningspaces",
       "RemoteUsername": "mlr-org",
       "RemotePkgRef": "mlr-org/mlr3tuningspaces",
-      "RemoteRef": "HEAD",
       "RemoteSha": "5460cdc26f071767ad9692ffd04f203a86f8a67b",
       "Requirements": [
         "R",
@@ -1284,7 +1291,13 @@
     "mlr3verse": {
       "Package": "mlr3verse",
       "Version": "0.3.0.9000",
-      "Source": "unknown",
+      "Source": "GitHub",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteUsername": "mlr-org",
+      "RemoteRepo": "mlr3verse",
+      "RemoteRef": "main",
+      "RemoteSha": "3b150d1071e45bb4c1ccecd8469e933e7b7a468a",
       "Requirements": [
         "R",
         "bbotk",
@@ -1304,18 +1317,16 @@
         "mlr3viz",
         "paradox"
       ],
-      "Hash": "83b356ff16756e82743e8f6bd063118e"
+      "Hash": "9a2204a0447b7c2eae6f6be3325cf903"
     },
     "mlr3viz": {
       "Package": "mlr3viz",
       "Version": "0.9.0.9000",
       "Source": "GitHub",
-      "Remotes": "mlr-org/mlr3proba, mlr-org/mlr3inferr",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
       "RemoteRepo": "mlr3viz",
       "RemoteUsername": "mlr-org",
-      "RemoteRef": "HEAD",
       "RemoteSha": "db6e547bf25220e710599456f564494cbdfe6e68",
       "Requirements": [
         "R",
@@ -1534,7 +1545,13 @@
     "randomPlantedForest": {
       "Package": "randomPlantedForest",
       "Version": "0.2.1.9000",
-      "Source": "unknown",
+      "Source": "GitHub",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteUsername": "PlantedML",
+      "RemoteRepo": "randomPlantedForest",
+      "RemoteRef": "master",
+      "RemoteSha": "f35c5e4bcf957ed20c0e17f9a0fbfa266041572f",
       "Requirements": [
         "Rcpp",
         "checkmate",
@@ -1543,7 +1560,7 @@
         "methods",
         "utils"
       ],
-      "Hash": "d3fbad82b9e23c7c8da618e0eef2d432"
+      "Hash": "0e1c12e5161515a4acae2471ec383b2d"
     },
     "ranger": {
       "Package": "ranger",
@@ -1576,13 +1593,13 @@
     },
     "renv": {
       "Package": "renv",
-      "Version": "1.0.7",
+      "Version": "1.0.8",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
         "utils"
       ],
-      "Hash": "397b7b2a265bc5a7a06852524dabae20"
+      "Hash": "e082251834fa427514e68bec8afc8fda"
     },
     "rgenoud": {
       "Package": "rgenoud",
@@ -1670,7 +1687,6 @@
       "RemoteRepo": "sass",
       "RemoteUsername": "rstudio",
       "RemotePkgRef": "rstudio/sass",
-      "RemoteRef": "HEAD",
       "RemoteSha": "9228fcf39deecfe32b7cb90ed40690338a18acba",
       "Requirements": [
         "R6",
@@ -1863,13 +1879,13 @@
     },
     "tinytex": {
       "Package": "tinytex",
-      "Version": "0.52",
+      "Version": "0.53",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
         "xfun"
       ],
-      "Hash": "cfbad971a71f0e27cec22e544a08bc3b"
+      "Hash": "9db859e8aabbb474293dde3097839420"
     },
     "utf8": {
       "Package": "utf8",

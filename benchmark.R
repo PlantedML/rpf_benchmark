@@ -1,7 +1,6 @@
 library(mlr3verse)
 library(mlr3mbo)
 library(mlr3extralearners)
-
 library(batchtools)
 source("tasks.R")
 source("learners.R")
@@ -25,22 +24,18 @@ reg <- makeExperimentRegistry(
   seed = conf$seed
 )
 
-
 tuning_measures <- list(
   twoclass = c("classif.bbrier", "classif.auc"),
   multiclass = c("classif.mbrier", "classif.mauc_aunp")
 )
 
-properties <- c("twoclass", "multiclass")
-
 designs <- list()
 
-for (this_property in properties) {
+for (this_property in names(tuning_measures)) {
   for (tuning_measure in tuning_measures[[this_property]]) {
     cli::cli_h2("{.val {this_property}} tasks with {.val {tuning_measure}} measure")
 
     tuning_measure_short <- stringi::stri_replace_all_fixed(tuning_measure, pattern = "classif.", replacement = "")
-
 
     current_task_ids <- task_meta[property == this_property, task_id]
     current_tasks <- tasks[names(tasks) %in% current_task_ids]
@@ -77,7 +72,8 @@ summarizeExperiments(by = c("task_id", "learner_id"))
 tab <- ljoin(unwrap(getJobTable()), task_meta, by = "task_id")
 data.table::setkey(tab, job.id)
 
-sample_ids = tab[dim_rank <= 10, .SD[sample(nrow(.SD), 1)], by = c("task_id", "learner_id", "tags")]
+sample_ids = tab[dim_rank <= 10][, .SD[sample(nrow(.SD), 1)],
+                 by = c("task_id", "learner_id", "tags")]
 sample_ids[, .(n = .N), by = .(task_id, learner_id, tags)]
 
 submitJobs(sample_ids)

@@ -7,7 +7,7 @@ collection = ocl(99)
 # Get the OML tasks as intermediate objects
 omltasks = lapply(collection$task_ids, \(id) otsk(id))
 # Derive mlr3 tasks and resamplings
-tasks = lapply(omltasks, \(learner) as_task(learner))
+tasks = lapply(omltasks, \(task) as_task(task))
 names(tasks) = mlr3misc::ids(tasks)
 
 # all_feature_types <- sapply(tasks, \(task) {
@@ -40,7 +40,7 @@ task_meta <- data.table::rbindlist(lapply(tasks, \(task) {
 
 # Discard tasks with missing values and dimensionality etc.
 tasks_exclude <- task_meta[
-  (has_missings) | (n_logical > 0) | (n_character > 0) | dim <= conf$task_dim_max
+  (has_missings) | (n_logical > 0) | (n_character > 0) | dim > conf$task_dim_max
   , task_id]
 
 cli::cli_alert_warning("Excluding the following tasks due to missings, unsupported features or dimensionality:")
@@ -80,8 +80,7 @@ if (conf$resampling$outer$strategy == "OML") {
     resampling$instantiate(task)
     resampling
   })
-  names(resamplings) = mlr3misc::ids(tasks)
 }
-
+names(resamplings) = mlr3misc::ids(tasks)
 stopifnot(length(tasks) == length(resamplings))
 saveRDS(task_meta, "task_meta.rds")
