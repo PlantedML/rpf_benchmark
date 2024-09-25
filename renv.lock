@@ -541,7 +541,7 @@
     },
     "fpc": {
       "Package": "fpc",
-      "Version": "2.2-12",
+      "Version": "2.2-13",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
@@ -562,7 +562,7 @@
         "stats",
         "utils"
       ],
-      "Hash": "5679840cd4a975661692045e0d767d65"
+      "Hash": "cf26d796ca5904f23581d8c5ab644c67"
     },
     "fs": {
       "Package": "fs",
@@ -955,6 +955,18 @@
       ],
       "Hash": "110ee9d83b496279960e162ac97764ce"
     },
+    "microbenchmark": {
+      "Package": "microbenchmark",
+      "Version": "1.5.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "graphics",
+        "stats"
+      ],
+      "Hash": "f9d226d88d4087d817d4e616626ce8e5"
+    },
     "mime": {
       "Package": "mime",
       "Version": "0.12",
@@ -977,14 +989,9 @@
     },
     "mlr3": {
       "Package": "mlr3",
-      "Version": "0.20.2.9000",
-      "Source": "GitHub",
-      "RemoteType": "github",
-      "RemoteHost": "api.github.com",
-      "RemoteUsername": "mlr-org",
-      "RemoteRepo": "mlr3",
-      "RemoteRef": "main",
-      "RemoteSha": "d3e0755f816cdad087f58ad5f33c41d314dc20de",
+      "Version": "0.21.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
       "Requirements": [
         "R",
         "R6",
@@ -1003,7 +1010,7 @@
         "parallelly",
         "uuid"
       ],
-      "Hash": "4291bba9b9ed0184d476d919a7c92a35"
+      "Hash": "f7414ff6a1b860122bb75c1b74c24cbb"
     },
     "mlr3batchmark": {
       "Package": "mlr3batchmark",
@@ -1152,7 +1159,7 @@
     },
     "mlr3mbo": {
       "Package": "mlr3mbo",
-      "Version": "0.2.4",
+      "Version": "0.2.5",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
@@ -1168,7 +1175,7 @@
         "paradox",
         "spacefillr"
       ],
-      "Hash": "5e2ed0348e0ad399dae4e198cddc5256"
+      "Hash": "d9e4c8942d697e2254457900cc80c258"
     },
     "mlr3measures": {
       "Package": "mlr3measures",
@@ -1185,7 +1192,7 @@
         "checkmate",
         "mlr3misc"
       ],
-      "Hash": "c320761c6cf0151fac3007dfdd6c0301"
+      "Hash": "f52b67b5a570ba148d1f6b977b63d37b"
     },
     "mlr3misc": {
       "Package": "mlr3misc",
@@ -1230,7 +1237,7 @@
     },
     "mlr3pipelines": {
       "Package": "mlr3pipelines",
-      "Version": "0.6.0",
+      "Version": "0.7.0",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
@@ -1246,7 +1253,7 @@
         "paradox",
         "withr"
       ],
-      "Hash": "4377f534ff568943e8ab56af58c0e65a"
+      "Hash": "51d218914e579258819a085dc40cc1d1"
     },
     "mlr3tuning": {
       "Package": "mlr3tuning",
@@ -1367,7 +1374,7 @@
       "Package": "nlme",
       "Version": "3.1-166",
       "Source": "Repository",
-      "Repository": "https://packagemanager.rstudio.com/all/latest",
+      "Repository": "RSPM",
       "Requirements": [
         "R",
         "graphics",
@@ -1455,7 +1462,7 @@
     },
     "prabclus": {
       "Package": "prabclus",
-      "Version": "2.3-3",
+      "Version": "2.3-4",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
@@ -1463,7 +1470,7 @@
         "R",
         "mclust"
       ],
-      "Hash": "57b387c58a84b5a77c324a4196703017"
+      "Hash": "ecec5b486bd8b9e629f893cb06eb4461"
     },
     "prettyunits": {
       "Package": "prettyunits",
@@ -1593,13 +1600,13 @@
     },
     "renv": {
       "Package": "renv",
-      "Version": "1.0.8",
+      "Version": "1.0.9",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
         "utils"
       ],
-      "Hash": "e082251834fa427514e68bec8afc8fda"
+      "Hash": "ef233f0e9064fc88c898b340c9add5c2"
     },
     "rgenoud": {
       "Package": "rgenoud",
@@ -1695,7 +1702,7 @@
         "rappdirs",
         "rlang"
       ],
-      "Hash": "3eea8b7c0d780b0d04fff9eb99dc7e6d"
+      "Hash": "b0841a4f66a6d297b3ada8bbbc2106b0"
     },
     "scales": {
       "Package": "scales",
